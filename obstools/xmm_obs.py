@@ -14,6 +14,7 @@ from ..etc import path4
 
 class Obs():
     """
+    Deals with the observation
     """
 
     def __init__(self, obsID=None, conf_file = None, directory = None, populate=True):
@@ -52,8 +53,6 @@ class Obs():
         if rr:
             ll.debug(36*"=" + " CONFIG " + 36*"=")
             ll.debug("\n"+rr)
-            #for l in rr.split("\n"):
-                #ll.debug(l)
             ll.debug(80*"=")
         
         if populate:
@@ -62,9 +61,20 @@ class Obs():
             else: self.initialized = True
         
     def __str__(self):
+        """
+        ObsID plus some text.
+        """
         return str("XMM Obs ("+self.config["obsID"]+")")
             
     def __getitem__(self, k):
+        """
+        Simplifies the access to common observation attributes.
+        
+        Parameters
+        ----------
+        k : str
+            Must be within ["decimalyear"]
+        """
         if k == "decimalyear":
             e = next(iter(self.exposures.values()))
             return e["decimalyear"]
@@ -72,7 +82,7 @@ class Obs():
     
     def write_config(self, fn=None):
         """
-          Write config to file
+          Write config to file. If no filename is provided, get path for config-file from current config
         """
         if fn is None:
             fn = path4(self.config, which="conf-file")
@@ -85,19 +95,18 @@ class Obs():
         Download ODF from archive
         
         Returns
-        -------
+        --------
         filename : str
+            The filename of the odf-tar.gz
         """ 
         import urllib.request
 
         req_str = self.config["XMM"]["archive_request_string"]+self.config["obsID"]+"&level=ODF"
         logging.debug("req_str=%s." % req_str)
         
-        #ofn = Path(self.config["DATA"]["basedir"]).joinpath(self.config["obsID"]+".tar.gz")
         ofn = path4(self.config, which="odf_file")
         logging.debug("ofn=%s" % ofn)
         local_filename, headers = urllib.request.urlretrieve(req_str, ofn)       
-        #print(headers)
         urllib.request.urlcleanup()
         return local_filename
     
@@ -184,6 +193,14 @@ class Obs():
                 self.exposures[exp.exp_id] = exp
         
     def populate_exposures(self):
+        """
+        Looks for the event-files at the expected location (from the current  config). 
+        
+        Returns
+        -------
+        cnt : int 
+            The number of event-files, or rather exposures, that were successfully created.
+        """
         detectors = self.config["DATA"]["detectors"]
         ll = logging.getLogger("xmmpy")
         #ll.debug(80*"=")
@@ -201,17 +218,9 @@ class Obs():
             except Exception as EE:
                 ll.info(str(EE))
         return cnt    
-    def gen_lc_shell_scripts(self):
-        from ..etc import spec_script
-        return "y"
-        #script_fns = []
-        #for e in self.exposures:
-            #ofn = self.exposures[e].lc_shell_script()
-            #script_fns.append(ofn)
-        #return script_fns
     
     def gen_spec_shell_scripts(self):
-        from ..etc import spec_script
+        from ..scripttools import spec_script
         r = ""
         ll = logging.getLogger("xmmpy")
         for e in self.exposures.values(): 
@@ -226,13 +235,13 @@ class Obs():
         return r
     
     def gen_lc_shell_scripts(self):
-        from ..etc import lc_script
+        from ..scripttools import lc_script
         ll = logging.getLogger("xmmpy")
         r = ""
         for e in self.exposures.values():
             ll.info("Generating light curve extraction script for "+str(e))
             ofn = path4(self.config, which = e.det+"_lc_script")
-            x = lc_script(e)
+            x = lc_script(e, ofn=ofn)
             r+=x
         ofn = path4(self.config, which = "lc_script")
         ll.info("Writing light curve script to "+str(ofn))
@@ -243,6 +252,9 @@ class Obs():
         
     @ofn_support    
     def shell_scripts(self, spec=None, lc=None):
+        """
+        Generate shell scripts for spectra (if True) and light curves (if lc==True)
+        """
         if spec is None:
             spec = self.config["SOURCE PRODUCTS"]["spectra"]
         if lc is None:
@@ -256,26 +268,11 @@ class Obs():
             r+=self.gen_lc_shell_scripts()
         return r
     
-        #def summary_script():
-            #import os
-            #ddir = os.path.dirname(self.directory+"/"+self.config["FILES"]["data_subdir"])
-            #with open(script_fn,"w") as oo:
-                #for sfn in lc_fns+spec_fns:
-                    ##print("XXX",sfn, ddir)
-                    #oo.write(". "+os.path.relpath(sfn[0], ddir)+"\n")
-            #return script_fn
-        #lc_fns = self.gen_lc_shell_scripts()   
-        #spec_fns = self.gen_spec_shell_scripts()
-        #return summary_script(), lc_fns+spec_fns
-        
         
         
         
 if __name__ == "__main__":
-    #o = Obs(".")
-    #o = Obs("../../planets/Mega-MEATS/GJ367/0892000101")
-    o = Obs("../../planets/Mega-MEATS/GJ341/0892000201")
-    o.populate_exposures()
-    oo = o.gen_shell_scripts()
-    print(oo)
+    o = Obs("0892000201", populate=False)
+    o.download_odf()
+    print(o)
     

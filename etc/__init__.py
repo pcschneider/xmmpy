@@ -1,4 +1,4 @@
-from .shell_scripts import *
+#from .shell_scripts import *
 from .io_helper import *
 from .region_tools import *
 from .my_configs import *

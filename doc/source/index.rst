@@ -12,7 +12,7 @@ Usage
 Examples
 ---------
 
-
+Download, process o
 
 Command line scripts
 ----------------------
@@ -31,7 +31,6 @@ Further information
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    installation
    internal_doc
