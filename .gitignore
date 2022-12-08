@@ -1,1 +1,6 @@
 doc/build
+__pycache__/
+etc/__pycache__/
+obstools/__pycache__/
+
+

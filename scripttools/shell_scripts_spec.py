@@ -1,5 +1,5 @@
-from .io_helper import ofn_support
-from .my_paths import path4
+from ..etc.io_helper import ofn_support
+from ..etc.my_paths import path4
 import os
 import logging
 
