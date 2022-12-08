@@ -78,7 +78,7 @@ def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix
     """
       Generate script that downloads and processes a particular obsID
     """
-    tmp = tempfile.NamedTemporaryFile(delete=False, dir='.')
+    tmp = tempfile.NamedTemporaryFile(delete=True, dir='.')
     ret = None
     
     if config is not None:
