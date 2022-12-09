@@ -36,7 +36,7 @@ with open(\""""+tmp2.name+"""\", "w") as oo:
     rr+="rm "+tmp2.name+"\n"
     rr+="log_fn=${fn%.sh}.log\n"
     rr+="echo \"Running ${fn} with log-file ${log_fn}\"\n"
-    rr+=". $fn &> $log_fn \n"
+    rr+=". $fn 2>&1 | tee $log_fn \n"
     #rr+="mv "+tmp1.name+" "+str(Path(directory).joinpath(obsID))+"/"+obsID+".xmmpy"
     rr+="mv "+tmp1.name+" "+str(Path(directory).joinpath(obsID))+"/xmmpy"+obsID+".conf"
     

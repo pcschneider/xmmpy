@@ -92,7 +92,7 @@ def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix
     ret+="rm "+tmp.name+"\n"
     ret+="log_fn=${fn%.sh}.log\n"
     ret+="echo \"Running ${fn} with log-file ${log_fn}\"\n"
-    ret+=". $fn &> $log_fn \n"
+    ret+=". $fn 2>&1 | tee  $log_fn \n"
     if filename is not None:
         with open(filename,"w") as oo:
             oo.write(ret)

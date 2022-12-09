@@ -46,11 +46,11 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
                     prog = 'xmm_source_regions',
-                    description = 'Generate TBD',
+                    description = 'Generate fits-region files for source',
                     epilog = 'Use at your own discretion...')
     
-    parser.add_argument('directory', default='.', nargs=1)
-    parser.add_argument('source', nargs=1)    
+    parser.add_argument('directory', default='.', nargs=1, help="directory must contain xmmpy{obsID}.conf and sas_{obsID}.sh. ")
+    parser.add_argument('source', nargs=1, help="Simbad findable name.")    
     parser.add_argument('--script', default=None)
     
     args = parser.parse_args()
