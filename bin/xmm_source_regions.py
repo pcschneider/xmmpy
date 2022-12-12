@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import argparse
 from pathlib import Path
+from argparse import RawDescriptionHelpFormatter
 
 def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.7", filename=None):
     import glob
@@ -9,14 +10,14 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
     if len(sas_init) != 1:
         raise Exception("Cannot find sas-init-file in "+directory)
     obsID = sas_init[0][-13:-3]
-    print("obsID form sas-init-file: ",obsID)
+    print("# obsID form sas-init-file: ",obsID)
     
     conf_fn = glob.glob(directory+"/xmmpy*.conf")
     if len(conf_fn) == 1:
-        print("Using observation specific xmmpy-configuration ("+conf_fn[0]+")")
+        print("# Using observation specific xmmpy-configuration ("+conf_fn[0]+")")
         conf_fn = conf_fn[0]
     elif len(conf_fn)>1:
-        print("More than one observations specific xmmpy-configuration ("+str(conf_fn)+"), ignoring...")
+        print("# More than one observations specific xmmpy-configuration ("+str(conf_fn)+"), ignoring...")
         conf_fn = None
     else:
         conf_fn = None
@@ -46,8 +47,8 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
                     prog = 'xmm_source_regions',
-                    description = 'Generate fits-region files for source',
-                    epilog = 'Use at your own discretion...')
+                    description = 'Generate fits-region files for source and new source-specific conf-file.\nInformation for file locations with be read from config-file (script assumes xmmpy{obsID}.conf-file to be present).',
+                    epilog = 'Use at your own discretion...', formatter_class = RawDescriptionHelpFormatter)
     
     parser.add_argument('directory', default='.', nargs=1, help="directory must contain xmmpy{obsID}.conf and sas_{obsID}.sh. ")
     parser.add_argument('source', nargs=1, help="Simbad findable name.")    

@@ -1,6 +1,8 @@
 import yaml
 from pathlib import Path
 from .my_logger import *
+import os
+import functools
 
 def default_config(obsID=None):
     """
@@ -186,7 +188,49 @@ def update_source_in_config(config, source):
     update_key_value(config["FILENAMES"], "ana_script", src_on+"_EPIC_ana.sh")   
     update_key_value(config["SPECTRA"], "script", src_on+"_spec_ana.sh")   
     update_key_value(config["LIGHT CURVES"], "script", src_on+"_lc_ana.sh")   
-        
+ 
+def conffile_reader(arg=0, verbose=1):
+    """
+    Can be used to decorate functions that require a config-dictionary as input to also accept filenames with a config.
+    
+    The decorator assumes that the conf-argument is the arg-th argument in the function call. 
+    """
+    def creader(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if isinstance(arg, int):
+                if isinstance(args[arg], dict):
+                    return func(*args, **kwargs)
+                elif isinstance(args[arg], str):
+                    if os.path.isfile(args[arg]):
+                        cnf = read_config(args[arg])
+                        nargs=list(args)
+                        nargs[arg] = cnf
+                        args=tuple(nargs)
+                        return func(*args, **kwargs)
+                    else:
+                        raise FileNotFoundError("Cannot find "+str(args[arg]))
+                else:
+                    raise TypeError("Argument for conf not compatible. ("+str(args[arg])+")")
+                
+            elif isinstance(kwargs[arg], str):
+                if isinstance(kwargs[arg], dict):
+                    return func(*args, **kwargs)
+                elif isinstance(kwargs[arg], str):
+                    if os.path.isfile(kwargs[arg]):
+                        cnf = read_config(kwargs[arg])
+                        kwargs[arg] = cnf
+                        return func(*args, **kwargs)
+                    else:
+                        raise FileNotFoundError("Cannot find "+str(args[arg]))
+                else:
+                    raise TypeError("Argument for conf not compatible. ("+str(args[arg])+")")
+            
+            else:
+                raise TypeError("Argument for 'arg' not compatible, must be str or int. ("+str(arg)+","+str(type(arg))+")")
+        return wrapper    
+    return creader
+
 def read_config(filename):
     """
     Make sure that the configuration parameters are available
@@ -212,13 +256,8 @@ def read_config(filename):
     elif isinstance(filename, dict):
         config = filename
     else:
-        #import logging
         logging.error("Don't know what to do with %s as a configuration." % str(config))
         raise ValueError("read_config - Cannot use object provided as \'config\'.")
     
     return update_config(df, config)
-    
-    # Some checks:
-      #TBI
-    #return config        
     

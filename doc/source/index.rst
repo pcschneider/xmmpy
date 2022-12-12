@@ -99,6 +99,12 @@ The source and background regions will be::
   directory/{obsID}/odata/*reg*.fits
 
 The script looks up the source in Simbad, propagates the sky position to the observation date and generates *one* source region (``*_reg_src.fits``) as well as individual background regions for pn, m1, and m2 (``*_reg_bkg_{det}.fits``). Source regions are circles. 
+
+Log-file: ``xmmpy.log``
+
+.. note::
+
+  While this script requires a directory as input, it really uses the xmmpy{obsID}.conf-file to find files.
   
 **xmm_source_products**
 
@@ -114,6 +120,7 @@ Further information
 
    installation
    internal_doc
+   next_steps
    
 
 Indices and tables
