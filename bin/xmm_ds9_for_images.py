@@ -37,7 +37,9 @@ def ds9_call(conf):
         evt_fn = os.path.abspath(path4(conf, which=det+"_evt"))
         src_reg_fn = os.path.abspath(path4(conf, which="src_reg"))
         bkg_reg_fn = os.path.abspath(path4(conf, which="bkg_"+det+"_reg"))
-        r+=evt_fn+" -region load "+src_reg_fn+" -region load "+bkg_reg_fn
+        r+=evt_fn+" -region load "+src_reg_fn+" -region load "+bkg_reg_fn+" -log -cmap b -bin factor 32"
+        if len(r) > 4: r+=" -lock frame wcs"
+        print()
     print(r)
     return r
 
