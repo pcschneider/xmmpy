@@ -1,6 +1,8 @@
 from pathlib import Path
 import glob
+from .my_configs import conffile_reader
 
+@conffile_reader()
 def path4(config, which="datadir", energy_range=None):
     """
     """
@@ -13,6 +15,8 @@ def path4(config, which="datadir", energy_range=None):
         return path4(config,"datadir").joinpath(config["DATA"]["specreldir"])
     elif which == "lcdir":
         return path4(config,"datadir").joinpath(config["DATA"]["lcreldir"])
+    elif which == "evtdir":
+        return path4(config,"datadir").joinpath(config["DATA"]["evtreldir"])
     
     elif which == "pn_evt":
         return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["pn_evt_file"])
@@ -28,6 +32,14 @@ def path4(config, which="datadir", energy_range=None):
     elif which == "m2_evt_filt":
         return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["m2_evt_file_filt"])
 
+# EVENTS
+    elif which == "pn_src_evt":
+        return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["pn_evt_file"])
+    elif which == "m1_src_evt":
+        return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["m1_evt_file"])
+    elif which == "m2_src_evt":
+        return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["m2_evt_file"])
+    
 # REGIONS    
     elif which == "src_reg":
         return path4(config, which="odata").joinpath( config["REGIONS"]["src"])
@@ -74,6 +86,21 @@ def path4(config, which="datadir", energy_range=None):
          return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_bin_spec_prefix"]+".fits")
     elif which == "m2_bin":
           return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_bin_spec_prefix"]+".fits")
+
+# EVENTS
+    elif which == "pn_src_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_pn.fits")
+    elif which == "m1_src_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_m1.fits")
+    elif which == "m2_src_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_m2.fits")
+    elif which == "pn_bkg_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_pn.fits")
+    elif which == "m1_bkg_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m1.fits")
+    elif which == "m2_bkg_evt_file":
+        return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m2.fits")
+    
 
 # LIGHT CURVES   
     elif which == "pn_src_lc":
@@ -144,6 +171,17 @@ def path4(config, which="datadir", energy_range=None):
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script_m2"])
     elif which == "spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script"])
+
+    
+    elif which == "pn_event_script":
+        return path4(config, which="datadir").joinpath(config["EVENTS"]["script_pn"])
+    elif which == "m1_event_script":
+        return path4(config, which="datadir").joinpath(config["EVENTS"]["script_m1"])
+    elif which == "m2_event_script":
+        return path4(config, which="datadir").joinpath(config["EVENTS"]["script_m2"])
+    elif which == "event_script":
+        return path4(config, which="datadir").joinpath(config["EVENTS"]["script"])
+    
     
     elif which == "pn_lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script_pn"])

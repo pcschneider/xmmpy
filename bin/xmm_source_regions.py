@@ -2,9 +2,9 @@
 import argparse
 from pathlib import Path
 from argparse import RawDescriptionHelpFormatter
+import glob
 
 def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.7", filename=None):
-    import glob
 
     sas_init = glob.glob(directory+"/sas_*.sh")
     if len(sas_init) != 1:

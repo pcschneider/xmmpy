@@ -36,4 +36,7 @@ def setup_logging(config):
     #logger.info(80*"=")
     return logger
     
-setup_logging(None)
+
+ll = logging.getLogger("xmmpy")
+if not ll.hasHandlers():  
+    setup_logging(None)

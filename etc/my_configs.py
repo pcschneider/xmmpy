@@ -15,7 +15,9 @@ DATA:
   basedir : "." # All pathes in this config are relative to this directory
   specreldir : "specs"
   lcreldir : "lcs"
+  evtreldir : "evts"
   detectors : ['pn', 'm1', 'm2']
+  source_name : None
   
 LOGGING:
   log_file : "xmmpy.log"
@@ -42,9 +44,16 @@ SPECTRA:
   script : spec_ana.sh
   use_filtered : FALSE
 
+EVENTS:
+  script: event_ana.sh
+  script_pn : event_ana_pn.sh
+  script_m1 : event_ana_m1.sh
+  script_m2 : event_ana_m2.sh
+  
 SOURCE PRODUCTS:
-  spectra : True
+  spectra : TRUE
   light curves : TRUE
+  events : TRUE
   
 REGIONS:
     src : reg_src.fits 
@@ -60,6 +69,9 @@ FILENAMES:
     pn_evt_file_filt : "pn_filt.fits"
     m1_evt_file_filt : "m1_filt.fits"
     m2_evt_file_filt : "m2_filt.fits"    
+    
+    src_evt_prefix : "evt_src"
+    bkg_evt_prefix : "evt_bkg"
     
     pn_src_spec_prefix : "spec_src_pn"
     m1_src_spec_prefix : "spec_src_m1"
@@ -94,11 +106,54 @@ FILENAMES:
     """
 
     config = yaml.safe_load(rr)
-    config["XMM"].update({"SAS_init_script":"sas"+str(obsID)+".sh"})
+    config["XMM"].update({"SAS_init_script":"sas_"+str(obsID)+".sh"})
     bd = Path(config["DATA"]["basedir"]).resolve()
     bd = str(bd).replace(str(Path.home()), "~")
     config["DATA"].update({"basedir":str(bd)})
     return config
+  
+
+
+def rewrite_config(ifn, base_config_func=None, config_manipulator_func=None, ofn=None):
+    """
+    Rewrite config-file
+    
+    Parameters
+    ----------
+    ifn : str
+        Filename of config-file (ATTENTION: Will be overwritten if ofn is None)
+    base_config_func : function
+        Function that generates the base-config filename, `base_config_func` takes a config-object as argument
+    config_manipulator_func : function
+        Manipulates config-object, takes config-object as argument
+    ofn : str
+        Outfile
+        
+    Example
+    -------
+    
+    .. code-block::
+    
+       rewrite_config('x.conf', lambda c: str(path4(c, "datadir"))+"/xmmpy"+c["obsID"]+".conf", lambda p:       p["XMM"].update({"SAS_init_script":"sas_"+str(p["obsID"])+".sh"}), "test.conf")
+    
+    """
+    from yaml import dump 
+
+    c = read_config(ifn)
+    pure_config_fn = base_config_func(c)
+    pconfig = read_config(pure_config_fn)
+    
+    update_source_in_config(pconfig, c["DATA"]["source_name"])
+    
+    if config_manipulator_func:
+        config_manipulator_func(pconfig)
+    
+    rr = dump(pconfig)
+    if ofn is None:
+        ofn = ifn
+    with open(ofn, "w") as oo:
+        oo.write(rr)
+        
   
 def update_config(dct1, dct2, verbose=1):
     """
@@ -146,7 +201,8 @@ def update_source_in_config(config, source):
         scrpt_old = Path(config[sect]["script_"+typ])
         if sect == "SPECTRA": osect = "spec"
         elif sect == "LIGHT CURVES": osect = "lc"
-        else: raise Exception("Only SPECTRA and LIGHT CURVES allowed as sections names.")
+        elif sect == "EVENTS": osect = "event"
+        else: raise Exception("Only SPECTRA, LIGHT CURVES, and EVENTS allowed as sections names.")
         scrpt_new =  str(scrpt_old.parent.joinpath(src_on+"_"+osect+"_script_"+typ+".sh"))
         config[sect]["script_"+typ] = scrpt_new
         
@@ -178,16 +234,24 @@ def update_source_in_config(config, source):
     ll = logging.getLogger("xmmpy")
     ll.info("Updating configuration for source="+str(source)+"(using outname="+src_on+")")
     
+    config["DATA"]["source_name"] = source.strip()
+    
     update_region("src")
     for det in config["DATA"]["detectors"]:
         update_region("bkg_"+det)
         update_script_name(det, "SPECTRA")
         update_script_name(det, "LIGHT CURVES")
+        update_script_name(det, "EVENTS")
+
         update_source_product_names(det, "spec_prefix")
         update_source_product_names(det, "lc_prefix")
+        
+    update_key_value(config["FILENAMES"], "src_evt_prefix", src_on+"_evt_src")
+    update_key_value(config["FILENAMES"], "bkg_evt_prefix", src_on+"_evt_bkg")    
     update_key_value(config["FILENAMES"], "ana_script", src_on+"_EPIC_ana.sh")   
     update_key_value(config["SPECTRA"], "script", src_on+"_spec_ana.sh")   
     update_key_value(config["LIGHT CURVES"], "script", src_on+"_lc_ana.sh")   
+    update_key_value(config["EVENTS"], "script", src_on+"_evt_ana.sh")   
  
 def conffile_reader(arg=0, verbose=1):
     """

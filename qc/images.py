@@ -9,7 +9,13 @@ import numpy as np
 import copy
 
 
-def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5):
+def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5, idx=1):
+    """
+    Parameters
+    ----------
+    r_scaling : float
+        Describes how much larger the image will be compared to the radius (does NOT affect how the regions are plotted)
+    """
     def add_patch(fn):
         """
         NOTE: Plots only the first region entry in the file
@@ -25,10 +31,10 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
 
     ff = pyfits.open(image_fn)
     wcs = WCS(ff[0].header, key="L")
-    ax = plt.subplot(projection=wcs)
+    ax = plt.subplot(2,2, idx, projection=wcs)
     mcmap = copy.copy(matplotlib.cm.get_cmap('jet')) 
     mcmap.set_bad((0,0,0))
-    im = ax.imshow(ff[0].data, norm=LogNorm(vmax=100), cmap = mcmap)
+    im = ax.imshow(ff[0].data, norm=LogNorm(vmax=10), cmap = mcmap)
     cbar = plt.colorbar(im)
     cbar.set_label("Counts")
     

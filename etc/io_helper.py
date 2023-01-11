@@ -31,8 +31,7 @@ def region_io_support(n, verbose=1):
 
 
 def reg2physical(fn, evt_fn=None):
-    
-    
+        
     src = ds9_to_physical(fn, evt_fn)
     #bkg = ds9_to_physical(bkg_fn, evt_fn)
     

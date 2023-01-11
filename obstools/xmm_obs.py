@@ -12,9 +12,35 @@ from xmmpy.etc import read_config, addFileHandler, setup_logging, default_config
 from yaml import dump 
 from ..etc import path4
 
+def discover_file(directory, typ):
+    """
+    """
+    directory = str(directory)
+    if typ=="pn_exp_map":
+        gstr = directory+"/*EPN*expmap*.ds"
+    elif typ=="m1_exp_map":
+        gstr = directory+"/*EMOS1*expmap*.ds"
+    elif typ=="m2_exp_map":
+        gstr = directory+"/*EMOS2*expmap*.ds"
+    
+    fnames = glob.glob(gstr)
+    
+    if len(fnames)==1:
+        return fnames[0]
+    
+    ll = logging.getLogger("xmmpy")
+    if len(fnames)==0:
+        ll.error("No file for "+str(typ)+ " in "+str(directory)+ "("+gstr+")")
+    else:
+        ll.error("More than one file for "+str(typ)+ " in "+str(directory)+ " ("+gstr+")")
+    return None
+
 class Obs():
     """
     Deals with the observation
+    
+      
+    :ivar exposures: dictionary holding the exposures, keys are the expIDs
     """
 
     def __init__(self, obsID=None, conf_file = None, directory = None, populate=True):
@@ -23,6 +49,7 @@ class Obs():
         ----------
         conf_file : str
           config file containing the description for the names of pn-files etc.
+        
         """
         
         self.exposures = {} 
@@ -40,7 +67,9 @@ class Obs():
                     raise ValueError("obsID in provided config-file ("+str(self.config["obsID"])+") and as argument do not match ("+str(obsID)+").")
         
         ll = logging.getLogger("xmmpy")
-        addFileHandler(self.config["LOGGING"]["log_file"])
+        if len(ll.handlers)==1:
+          addFileHandler(self.config["LOGGING"]["log_file"])
+        
         if yy !="": ll.info(yy)
         
         if directory: 
@@ -78,7 +107,8 @@ class Obs():
         if k == "decimalyear":
             e = next(iter(self.exposures.values()))
             return e["decimalyear"]
-            
+        if k in ["pn_exp_map", "m1_exp_map", "m2_exp_map"]:
+            return discover_file(path4(self.config, "odata"), k)
     
     def write_config(self, fn=None):
         """
@@ -139,7 +169,7 @@ class Obs():
         return r
 
     @ofn_support
-    def regions4source(self, source):
+    def regions4source(self, source, coord=None):
         """
           Generate source and background sources
         """
@@ -163,12 +193,18 @@ class Obs():
         from astroquery.simbad import Simbad
         from astropy.coordinates import SkyCoord
         import astropy.units as u
-        customSimbad = Simbad()
-        customSimbad.add_votable_fields("pm")
-        result_table = customSimbad.query_object(source)
-        ra, dec = result_table["RA"][0], result_table["DEC"][0]
-        ra, dec = ra.replace(" ", ":"), dec.replace(" ",":")
-        c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), pm_ra_cosdec = result_table["PMRA"][0]*u.mas/u.yr, pm_dec = result_table["PMDEC"][0]*u.mas/u.yr, obstime="J2000")
+        if coord is None:
+            customSimbad = Simbad()
+            customSimbad.add_votable_fields("pm")
+            result_table = customSimbad.query_object(source)
+            if result_table is None or len(result_table) == 0:
+                raise Exception("Cannot retrieve coordinates from Simbad for "+str(source))
+            ra, dec = result_table["RA"][0], result_table["DEC"][0]
+            ra, dec = ra.replace(" ", ":"), dec.replace(" ",":")
+            c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), pm_ra_cosdec = result_table["PMRA"][0]*u.mas/u.yr, pm_dec = result_table["PMDEC"][0]*u.mas/u.yr, obstime="J2000")
+        else:
+            c = coord            
+        
         dt = self["decimalyear"]-2000.
         cc = c.apply_space_motion(dt=dt * u.year)
         
@@ -211,7 +247,15 @@ class Obs():
             ll.info("  Detector %s -> %s" % (det, filename))
             try:
                 exp = xe.Exposure(filename, self.config)
+                if exp.exp_id in self.exposures:
+                    det0 = self.exposures[exp.exp_id].det
+                    det1 = exp.det
+                    if det0 != det1: # Not the same exposure
+                        ii = int(exp.exp_id)+1
+                        nexpid = str(ii).zfill(len(exp.exp_id))
+                        exp.exp_id = nexpid
                 self.exposures[exp.exp_id] = exp
+                
                 cnt+=1
                 ll.info("        with EXP_ID=%s" % exp.exp_id)
                  
@@ -219,9 +263,13 @@ class Obs():
                 ll.info(str(EE))
         return cnt    
     
-    def gen_spec_shell_scripts(self):
+    def gen_spec_shell_scripts(self, sas_init=False):
         from ..scripttools import spec_script
         r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
+    
         ll = logging.getLogger("xmmpy")
         for e in self.exposures.values(): 
             ll.info("Generating spectral extraction script for "+str(e))
@@ -234,10 +282,14 @@ class Obs():
             oo.write(r)
         return r
     
-    def gen_lc_shell_scripts(self):
+    def gen_lc_shell_scripts(self, sas_init=False):
         from ..scripttools import lc_script
         ll = logging.getLogger("xmmpy")
         r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
+    
         for e in self.exposures.values():
             ll.info("Generating light curve extraction script for "+str(e))
             ofn = path4(self.config, which = e.det+"_lc_script")
@@ -248,10 +300,29 @@ class Obs():
         with open(ofn, "w") as oo:
             oo.write(r)
         return r
+
+    def gen_evt_shell_scripts(self, sas_init=False):
+        from ..scripttools import evt_script
+        ll = logging.getLogger("xmmpy")
+        r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
     
+        for e in self.exposures.values():
+            ll.info("Generating event extraction script for "+str(e))
+            ofn = path4(self.config, which = e.det+"_event_script")
+            x = evt_script(e, ofn=ofn)
+            r+=x
+        ofn = path4(self.config, which = "event_script")
+        ll.info("Writing light curve script to "+str(ofn))
+        with open(ofn, "w") as oo:
+            oo.write(r)
+        return r
+        
         
     @ofn_support    
-    def shell_scripts(self, spec=None, lc=None):
+    def shell_scripts(self, spec=None, lc=None, evt=None, sas_init=True):
         """
         Generate shell scripts for spectra (if True) and light curves (if lc==True)
         """
@@ -259,13 +330,22 @@ class Obs():
             spec = self.config["SOURCE PRODUCTS"]["spectra"]
         if lc is None:
             lc = self.config["SOURCE PRODUCTS"]["light curves"]
+        if evt is None:
+            evt = self.config["SOURCE PRODUCTS"]["events"]
         ll = logging.getLogger("xmmpy")
-        ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+").")
-        r = ""
+        ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+").")
+        r = "# xmmpy ana script"
+        
+        if sas_init:
+            sfn = path4(self.config, "SAS_init_script")
+            r+="source "+sfn+"\n\n"
+        
         if spec:
             r+=self.gen_spec_shell_scripts()
         if lc:
             r+=self.gen_lc_shell_scripts()
+        if evt:
+            r+=self.gen_evt_shell_scripts()
         return r
     
         

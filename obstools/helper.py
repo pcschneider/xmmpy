@@ -1,12 +1,11 @@
 import logging
 import glob
-from regions import read_ds9, write_ds9, PixelRegion
+from regions import PixelRegion
 import regions
 import astropy.io.fits as pyfits
 from astropy import wcs
 
 def ds9_to_physical(fname, evt_fn=None):
-  #regs = read_ds9(fname)
   regs = regions.Regions.read(fname)
   phys = True
   for r in regs:
