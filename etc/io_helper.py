@@ -58,7 +58,7 @@ def reg2physical(fn, evt_fn=None):
     return src    
   
   
-def fits_region_file_writer(pix_region, ofn, overwrite=True):
+def fits_region_file_writer(pix_region, ofn, overwrite=True, verbose=1):
     """
     Currently only accepts "Circles"
     
@@ -83,9 +83,9 @@ def fits_region_file_writer(pix_region, ofn, overwrite=True):
     hd.header["HDUCLASS"] = "ASC"
     hd.header["MTYPE1"] = "pos"
     hdul = pyfits.HDUList([hdu, hd])
-    for c in hdul[1].columns:
-        
-        print(c, type(c), hdul[1].data[c.name])
+    if verbose>2:
+        for c in hdul[1].columns:
+            print(c, type(c), hdul[1].data[c.name])
     hdul.writeto(ofn, overwrite=True)        
     
   
