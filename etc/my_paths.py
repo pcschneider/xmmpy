@@ -44,11 +44,20 @@ def path4(config, which="datadir", energy_range=None):
     elif which == "src_reg":
         return path4(config, which="odata").joinpath( config["REGIONS"]["src"])
     elif which == "bkg_pn_reg":
-        return path4(config, which="odata").joinpath(config["REGIONS"]["bkg_pn"])
+        p1 = path4(config, which="odata")
+        p2 = config["REGIONS"]["bkg_pn"]
+        if p2 is None: return None
+        return p1.joinpath(p2)
     elif which == "bkg_m1_reg":
-        return path4(config, which="odata").joinpath(config["REGIONS"]["bkg_m1"])
+        p1 = path4(config, which="odata")
+        p2 = config["REGIONS"]["bkg_m1"]
+        if p2 is None: return None
+        return p1.joinpath(p2)
     elif which == "bkg_m2_reg":
-        return path4(config, which="odata").joinpath(config["REGIONS"]["bkg_m2"])
+        p1 = path4(config, which="odata")
+        p2 = config["REGIONS"]["bkg_m1"]
+        if p2 is None: return None
+        return p1.joinpath(p2)
 
 # SPECTRA   
     elif which == "pn_src_spec_file":
@@ -100,6 +109,36 @@ def path4(config, which="datadir", energy_range=None):
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m1.fits")
     elif which == "m2_bkg_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m2.fits")
+    
+# EXPOSURE MAP
+    elif which == "pn_expmap":
+        dd = str(path4(config, which="odata"))+"/*EPN*ImagingEvt_expmap.ds"
+        fname = glob.glob(dd)
+        if len(fname)==1:
+            return fname[0]
+        elif len(fname)==0: 
+            raise Exception("No exposure map for pn found (",dd,")")
+        else:
+            raise Exception("More than one exposure map found for pn (",dd,")")
+    elif which == "m1_expmap":
+        dd = str(path4(config, which="odata"))+"/*EMOS1*ImagingEvt_expmap.ds"
+        fname = glob.glob(dd)
+        if len(fname)==1:
+            return fname[0]
+        elif len(fname)==0: 
+            raise Exception("No exposure map for m1 found (",dd,")")
+        else:
+            raise Exception("More than one exposure map found for m1 (",dd,")")
+    elif which == "m2_expmap":
+        dd = str(path4(config, which="odata"))+"/*EMOS2*ImagingEvt_expmap.ds"
+        fname = glob.glob(dd)
+        if len(fname)==1:
+            return fname[0]
+        elif len(fname)==0: 
+            raise Exception("No exposure map for m2 found (",dd,")")
+        else:
+            raise Exception("More than one exposure map found for m2 (",dd,")")
+
     
 
 # LIGHT CURVES   
