@@ -112,7 +112,9 @@ def path4(config, which="datadir", energy_range=None):
     
 # EXPOSURE MAP
     elif which == "pn_expmap":
-        dd = str(path4(config, which="odata"))+"/*EPN*ImagingEvt_expmap.ds"
+        odata = str(path4(config, which="odata"))
+        print(odata)
+        dd = odata+"/*EPN*ImagingEvt_expmap.ds"
         fname = glob.glob(dd)
         if len(fname)==1:
             return fname[0]

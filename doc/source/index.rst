@@ -110,7 +110,12 @@ Log-file: ``xmmpy.log``
 
 **xmm_full_process**
 
+Some Helper Functions
+=====================
+.. toctree::
+   :maxdepth: 2
 
+   etc 
 
 Further information
 ===================
