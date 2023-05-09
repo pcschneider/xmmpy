@@ -55,7 +55,7 @@ def path4(config, which="datadir", energy_range=None):
         return p1.joinpath(p2)
     elif which == "bkg_m2_reg":
         p1 = path4(config, which="odata")
-        p2 = config["REGIONS"]["bkg_m1"]
+        p2 = config["REGIONS"]["bkg_m2"]
         if p2 is None: return None
         return p1.joinpath(p2)
 

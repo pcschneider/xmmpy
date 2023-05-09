@@ -13,9 +13,16 @@ echo "Running light curve extraction (EVTFILE, binning: BINNING, energy: ENERGLO
 evselect table=EVTFILE withrateset=yes rateset="RATESETSRC" makeratecolumn=yes maketimecolumn=yes timecolumn=TIME timebinsize=BINNING expression="XXXXXXXX && (PI in [ENERGLO:ENERGHI]) && region(SRCREGIONFITS, X, Y)"
 evselect table=EVTFILE withrateset=yes rateset=RATESETBKG makeratecolumn=yes maketimecolumn=yes timecolumn=TIME timebinsize=BINNING expression="XXXXXXXX && (PI in [ENERGLO:ENERGHI]) && region(BKGREGIONFITS, X, Y)"
 epiclccorr srctslist=RATESETSRC eventlist=EVTFILE outset=RATESETCRR bkgtslist=RATESETBKG withbkgset=yes applyabsolutecorrections=no
-
 """
 
+script_content="""
+######################################
+echo "Running light curve extraction (EVTFILE, binning: BINNING, energy: ENERGLO:ENERGHI)"
+
+evselect table=EVTFILE withrateset=yes rateset="RATESETSRC" makeratecolumn=yes maketimecolumn=yes timecolumn=TIME timebinsize=BINNING expression="XXXXXXXX && (PI in [ENERGLO:ENERGHI]) && region(SRCREGIONFITS, X, Y)" ZZZZZZZZ
+evselect table=EVTFILE withrateset=yes rateset=RATESETBKG makeratecolumn=yes maketimecolumn=yes timecolumn=TIME timebinsize=BINNING expression="XXXXXXXX && (PI in [ENERGLO:ENERGHI]) && region(BKGREGIONFITS, X, Y)" ZZZZZZZZ
+epiclccorr srctslist=RATESETSRC eventlist=EVTFILE outset=RATESETCRR bkgtslist=RATESETBKG withbkgset=yes applyabsolutecorrections=no
+"""
 
 @ofn_support
 def lc_script(exp):
@@ -45,7 +52,17 @@ def lc_script(exp):
         bkg_reg = str(path4(exp.config, "bkg_"+d+"_reg"))
         
         binning = exp.config["LIGHT CURVES"]["binning"]
-        
+        try:
+            t0 = exp.config["LIGHT CURVES"]["t0"]
+        except Exception as EE:
+            print(EE)
+            raise EE
+            t0 = None
+        try:
+            t1 = exp.config["LIGHT CURVES"]["t1"]
+        except:
+            t1 = None
+            
         
         ll.debug("Generating light curve script for "+str(exp)+":")
         ll.debug("    lc_dir: "+str(lc_dir))
@@ -53,6 +70,7 @@ def lc_script(exp):
         ll.debug("    src_reg: "+str(src_reg))
         ll.debug("    bkg_reg: "+str(bkg_reg))
         ll.debug("    binning: "+str(binning))
+        ll.debug("    to, t1:  "+str(t0)+" "+str(t1))
         ll.debug("    energies: "+e_expression)  
         
         
@@ -73,6 +91,13 @@ def lc_script(exp):
         elif d == "pn":
             n_script = n_script.replace("XXXXXXXX", "(FLAG==0) && (PATTERN<=4)")        
         
+        appendix = ""
+        if t0:
+            appendix+=" timemin="+str(t0)
+        if t1:
+            appendix+=" timemax="+str(t1)
+        n_script = n_script.replace("ZZZZZZZZ",appendix)
+
         out+=n_script
     return out
     

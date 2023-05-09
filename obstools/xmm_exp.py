@@ -24,13 +24,21 @@ class Exposure():
       return "Exp: "+str(self.exp_id)+" ("+str(self.det)+" -> "+str(self.evt_filename)+")"
   
   def __getitem__(self, k):
-      if k == "decimalyear":
+      if isinstance(k, str) and k.lower() == "decimalyear":
           from astropy.time import Time
           with pyfits.open(self.evt_filename) as ff:
               x = ff[0].header["DATE-OBS"]
           d = Time(x, format='isot', scale='utc').decimalyear
           return d
-      
+      elif isinstance(k, str) and k.lower() == "filter":
+          with pyfits.open(self.evt_filename) as ff:
+              x = ff[0].header["Filter"]
+      elif isinstance(k, str) and k.lower() == "exposure":
+          print(self.evt_filename)
+          with pyfits.open(self.evt_filename) as ff:
+              x = ff[0].header["Duration"]         
+          return x
+        
   def regions4coordinates(self, coord, src_radius=15, bkg_radius=35, write=True, source_name="src"):
    """
      Parameters

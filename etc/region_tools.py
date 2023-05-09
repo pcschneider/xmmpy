@@ -19,6 +19,49 @@ def source_region(source_name, observation=None, radius=15):
     region_sky = regions.CircleSkyRegion(center=center_sky, radius=radius * u.arcsec)
     return region_sky.serialize(format='ds9')
 
+def aperture_from_fits(fn, wcs_ref_file=None, region_index=0):
+   """
+   Get photutils-aperture from fits-file
+
+   Parameters
+   ------------
+   fn : str
+       Region file
+   wcs_reg_file : str
+       File containing the WCS-information for converting physical to sky coordinates
+   region_index : int
+       Index of region in fits-file (if more than one region in file)  
+   """
+   from photutils.aperture import SkyCircularAperture, CircularAperture
+   from astropy.io import fits as pyfits
+   
+   with pyfits.open(fn) as rff:
+        if rff[1].data["SHAPE"].upper()=="CIRCLE":
+            sx, sy, sr = rff[1].data["X"][region_index], rff[1].data["Y"][region_index], rff[1].data["R"][region_index]
+        else:
+            raise Exception("Only circle-regions allows in xmmpy.etc.aperture_from_fits")
+
+   if wcs_ref_file is not None:
+        from astropy.wcs import WCS
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
+        with pyfits.open(wcs_ref_file) as ff:
+            wcs = WCS(ff[0].header)
+            try:
+                wcsL = WCS(ff[0].header, key="L")
+            except Exception as EE:
+                print("No L-key WCS in ", wcs_fn)
+                raise EE
+        tmp = wcsL.wcs_world2pix(sx, sy, 1)
+        sky = wcs.wcs_pix2world(tmp[0], tmp[1], 1)
+    
+        coord = SkyCoord(sky[0], sky[1], unit=(u.degree, u.degree))
+        return SkyCircularAperture(coord, r=sr/20*u.arcsec)  
+   ap = CircularAperture(sx, sy, sr)
+   return ap
+  
+
+
 def fits_region(fn):
    """
    Extract region information from fits-file

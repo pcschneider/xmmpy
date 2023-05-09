@@ -109,6 +109,8 @@ class Obs():
             return e["decimalyear"]
         if k in ["pn_exp_map", "m1_exp_map", "m2_exp_map"]:
             return discover_file(path4(self.config, "odata"), k)
+        if k == "obsID":
+            return self.config["obsID"]
     
     def write_config(self, fn=None):
         """

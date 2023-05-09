@@ -54,8 +54,10 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     mcmap = copy.copy(matplotlib.cm.get_cmap('jet')) 
     mcmap.set_bad((0,0,0))
     im = ax.imshow(ff[0].data, norm=LogNorm(vmax=10), cmap = mcmap)
-    cbar = plt.colorbar(im)
+    cbar = plt.colorbar(im, ticks=[1,5,10])
     cbar.set_label("Counts")
+    cbar.set_ticks([1,2,3,4,6,10])
+    cbar.set_ticklabels(["1","2","3","4","6","10"])
     
     sx, sy, sr, _ = add_patch(region_fn)
     if bkg_region_fn:
@@ -76,7 +78,13 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     else:
         tlim1 = (sx-r_scaling*sr, sy-r_scaling*sr)
         tlim2 = (sx+r_scaling*sr, sy+r_scaling*sr)        
-        
+
+    ll = ax.get_xticks()[::3]
+    # print(ll)
+    # nllx = [str("%i" % (x-ll[len(ll)//2])) for x in ll[::3]]
+    # print("x ll",ll, ll[len(ll)//2], nllx)
+    ax.set_xticks(ll, [str("%i" % x) for x in ll])#, nllx)
+
     ttx = ax.get_transform("world")
     cc0 = ttx.transform(tlim1)
     cc0 = ax.transData.inverted().transform(cc0)
@@ -84,6 +92,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     cc1 = ax.transData.inverted().transform(cc1)
     ax.set_xlim(cc0[0], cc1[0])
     ax.set_ylim(cc0[1], cc1[1])
+    # ax.annotate(ff[0].header["Filter"], xy=(0.2, 0.2), color='white', xycoords="axes fraction")
     ax.set_xlabel("x (physical)")
     ax.set_ylabel("y (physical)")
     ax.legend()

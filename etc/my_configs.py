@@ -112,8 +112,29 @@ FILENAMES:
     config["DATA"].update({"basedir":str(bd)})
     return config
   
+def update_value_in_config(ifn, updater=None, ofn=None):
+    """
+    Change one parameter in config-file
+    
+    Example
+    --------
+    .. code-block::
 
-
+        update_value_in_config()
+    """
+    from yaml import dump 
+    cnf = read_config(ifn)
+    
+    if updater:
+        updater(cnf)
+    
+    rr = dump(cnf)
+    if ofn is None:
+        ofn = ifn
+    with open(ofn, "w") as oo:
+        oo.write(rr)
+        
+  
 def rewrite_config(ifn, base_config_func=None, config_manipulator_func=None, ofn=None):
     """
     Rewrite config-file
@@ -155,7 +176,7 @@ def rewrite_config(ifn, base_config_func=None, config_manipulator_func=None, ofn
         oo.write(rr)
         
   
-def update_config(dct1, dct2, verbose=1):
+def update_config2(dct1, dct2, verbose=1):
     """
       Update every item in dct1 with a possibly existint entry in dct2
     """
@@ -166,7 +187,7 @@ def update_config(dct1, dct2, verbose=1):
                 if verbose>1: print("    k",k," (",s1[k]," -> ",s2[k],")")
             else:
                 if verbose>1: print("    k ",k, "(using default: ",s1[k],")")
-                
+           
     for s in dct1.keys():
         if verbose>1: print("config-file section",s)
         if s in dct2:
@@ -181,6 +202,38 @@ def update_config(dct1, dct2, verbose=1):
         if verbose>1: print()
     if verbose>2: print("XXX",dct1)
     return dct1
+
+
+def update_config(dct1, dct2, verbose=1):
+    """
+      Update every item in dct1 with a possibly existint entry in dct2
+      (dct1=default, dct2=new, return: dct1
+    """
+    def update_section(s1, s2):
+        """
+        Make sure every item in s2 is also present in s1
+        (s1=default, s2=new)
+        """
+        for k in s2.keys():
+            s1[k] = s2[k]
+            if verbose>1: print("    k",k," (",s1[k]," -> ",s2[k],")")
+                
+    for s in dct2.keys():
+        if verbose>1: print("config-file section",s)
+        if s in dct1:
+            if verbose>1: print(s, type(dct1[s]))
+            if isinstance(dct1[s], dict):
+                update_section(dct1[s], dct2[s])
+            else: 
+                if verbose>1: print(" no dict ",type(s), "  ",  dct1[s]," -> ",dct2[s])
+                dct1[s] = dct2[s]
+        else: # s not in dct1
+            if verbose>1: print(s, "not in default, setting to: ", str(dct2[s]))
+            dct1[s] = dct2[s]
+        if verbose>1: print()
+    if verbose>2: print("XXX",dct1)
+    return dct1
+
 
 def update_source_in_config(config, source):
     """

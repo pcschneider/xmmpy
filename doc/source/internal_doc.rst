@@ -17,9 +17,22 @@ Functions
 ---------
 
 .. automethod:: xmmpy.etc.path4
+
+|
+
 .. automethod:: xmmpy.etc.default_config
+
+|
+
 .. automethod:: xmmpy.etc.update_source_in_config
+
+|
+
 .. automethod:: xmmpy.etc.rewrite_config
+
+|
+
+.. automethod:: xmmpy.etc.update_value_in_config
 
 Classes
 -------
