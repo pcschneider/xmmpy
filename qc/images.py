@@ -37,7 +37,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     ff = pyfits.open(image_fn)
     wcs = WCS(ff[0].header, key="L")
     if fig is not None:
-        print("Using fig")
+        #print("Using fig")
         if single_ax:
             idx = 1
             ax = fig.add_subplot(1,1, idx, projection=wcs)
