@@ -348,13 +348,15 @@ def conffile_reader(arg=0, verbose=1):
         return wrapper    
     return creader
 
-def read_config(filename):
+def read_config(filename, verbose=1):
     """
     Make sure that the configuration parameters are available
     
     Parameters
     ----------
     config - str or dict
+    verbose - int
+        Higher increaeses vebosity
     """
     df = default_config()
     
@@ -367,7 +369,7 @@ def read_config(filename):
     
     if isinstance(filename, str):
         import logging
-        ll.info(str("Reading configuration file \'%s\'." % filename))
+        if verbose>0: ll.info(str("Reading configuration file \'%s\'." % filename))
         with open(filename, mode="r") as fp:
             config = yaml.safe_load(fp)
     elif isinstance(filename, dict):

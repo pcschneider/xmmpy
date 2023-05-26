@@ -339,7 +339,7 @@ class Obs():
         r = "# xmmpy ana script"
         
         if sas_init:
-            sfn = path4(self.config, "SAS_init_script")
+            sfn = str(path4(self.config, "SAS_init_script"))
             r+="source "+sfn+"\n\n"
         
         if spec:

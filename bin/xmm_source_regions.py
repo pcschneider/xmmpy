@@ -4,7 +4,7 @@ from pathlib import Path
 from argparse import RawDescriptionHelpFormatter
 import glob
 
-def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.7", filename=None):
+def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
 
     sas_init = glob.glob(directory+"/sas_*.sh")
     if len(sas_init) != 1:
@@ -22,7 +22,8 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
     else:
         conf_fn = None
       
-    r="import logging\n"
+    r="import os\n"
+    r+="import logging\n"
     r+="from xmmpy import Obs\n"
     r+="from xmmpy.etc import path4\n\n"
     if conf_fn:
@@ -31,7 +32,8 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
         r+="o = Obs(\""+obsID+"\")\n"
     r+="o.exposures_from_directory()\n"    
     
-    r+="cfn = str(path4(o.config, which=\"datadir\").joinpath(\""+src_name.replace(" ","_")+"_"+obsID+".conf\"))\n"
+    r+="cfn = os.path.expanduser(str(path4(o.config, which=\"datadir\").joinpath(\""+src_name.replace(" ","_")+"_"+obsID+".conf\")))\n"
+    r+="print(\"Writing config to \", cfn)\n"
     r+="o.regions4source(\""+src_name+"\", ofn=cfn)\n"
     r+="ll = logging.getLogger(\"xmmpy\")\n"
     r+="ll.info(\"New config-file for source=\\\""+src_name+"\\\" and obsID=\"+o.config[\"obsID\"]+\": \\n\"+cfn)\n"

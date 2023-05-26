@@ -30,7 +30,7 @@ def spec_script(exp):
         filt="_filt"
     d = exp.det
     
-    spec_dir = path4(exp.config, "specdir")
+    spec_dir = os.path.expanduser(str(path4(exp.config, "specdir")))
     if not os.path.exists(spec_dir): os.mkdir(spec_dir)
     
     evt_file = str(path4(exp.config, d+"_evt"+filt))

@@ -55,8 +55,8 @@ def lc_script(exp):
         try:
             t0 = exp.config["LIGHT CURVES"]["t0"]
         except Exception as EE:
-            print(EE)
-            raise EE
+            #print(EE)
+            #raise EE
             t0 = None
         try:
             t1 = exp.config["LIGHT CURVES"]["t1"]

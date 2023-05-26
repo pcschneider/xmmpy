@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/home/majestix/hdd/python/bin/python3.8
 from xmmpy.etc import path4, read_config, conffile_reader
 import argparse
 from argparse import RawDescriptionHelpFormatter
@@ -34,9 +34,9 @@ def ds9_call(conf):
     r = "ds9"
     for det in conf["DATA"]["detectors"]:
         r+=" "
-        evt_fn = os.path.abspath(path4(conf, which=det+"_evt"))
-        src_reg_fn = os.path.abspath(path4(conf, which="src_reg"))
-        bkg_reg_fn = os.path.abspath(path4(conf, which="bkg_"+det+"_reg"))
+        evt_fn = os.path.expanduser(path4(conf, which=det+"_evt"))
+        src_reg_fn = os.path.expanduser(path4(conf, which="src_reg"))
+        bkg_reg_fn = os.path.expanduser(path4(conf, which="bkg_"+det+"_reg"))
         r+=evt_fn+" -region load "+src_reg_fn+" -region load "+bkg_reg_fn+" -log -cmap b -bin factor 32"
         if len(r) > 4: r+=" -lock frame wcs"
         print()

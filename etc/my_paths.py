@@ -1,9 +1,15 @@
 from pathlib import Path
 import glob
+import os
 from .my_configs import conffile_reader
 
-@conffile_reader()
+
 def path4(config, which="datadir", energy_range=None):
+    tmp = path4_ll(config, which=which, energy_range=energy_range)
+    return Path(os.path.expanduser(str(tmp)) )
+
+@conffile_reader()
+def path4_ll(config, which="datadir", energy_range=None):
     """
     """
     #print("which=",which)

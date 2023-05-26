@@ -44,7 +44,35 @@ Simply do::
 
 where ``command`` is either ``xmm_retrieve.py`` or ``xmm_source_products`` with its arguments.
     
-    
+  
+Step-by-step Example
+---------------------
+
+Setup paths::
+
+  export xmmpy=/home/majestix/hdd/tools/xmmpy
+  export PATH=$PATH:${xmmpy}/bin
+  export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
+
+Generate regions::
+
+  xmm_source_regions.py 0892000501/ 'TOI-776' --script='source_regs.sh'
+  . source_regs.sh
+
+Check regions::
+
+    xmm_ds9_for_images.py 0892000501/ 'TOI-776'
+
+Correction region format (because ds9 cannot save regions to fits-files)::
+
+    xmm_correct_region_file_format.py 0892000501/  
+    #(if only one config files, else provide config-file directly)
+
+Generate source products::
+
+  xmm_source_products.py 0892000501/ 'TOI-776'
+
+  
 High level scripts
 ----------------------
 
