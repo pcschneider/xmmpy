@@ -174,24 +174,7 @@ class Obs():
     def regions4source(self, source, coord=None):
         """
           Generate source and background sources
-        """
-        #exp = self.exposures.keys()[]
-        #def update_region(typ):
-            #src_old = Path(self.config["REGIONS"][typ])
-            #src_on = source.replace(" ","_")
-            #src_new = str(src_old.parent.joinpath(typ+"_"+src_on+"_reg.fits"))
-            #self.config["REGIONS"][typ] = src_new
-        
-        #def update_script_name(typ, sect):
-            ##print(self.config[sect])
-            #src_on = source.replace(" ","_")
-            #scrpt_old = Path(self.config[sect]["script_"+typ])
-            #scrpt_new =  str(scrpt_old.parent.joinpath("script_"+typ+"_"+src_on+".sh"))
-            #self.config[sect]["script_"+typ] = scrpt_new
-        
-        #def update_source_product_names(d, typ):
-            
-        
+        """        
         from astroquery.simbad import Simbad
         from astropy.coordinates import SkyCoord
         import astropy.units as u
@@ -336,7 +319,7 @@ class Obs():
             evt = self.config["SOURCE PRODUCTS"]["events"]
         ll = logging.getLogger("xmmpy")
         ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+").")
-        r = "# xmmpy ana script"
+        r = "# xmmpy ana script\n\n"
         
         if sas_init:
             sfn = str(path4(self.config, "SAS_init_script"))

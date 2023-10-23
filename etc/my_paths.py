@@ -6,6 +6,7 @@ from .my_configs import conffile_reader
 
 def path4(config, which="datadir", energy_range=None):
     tmp = path4_ll(config, which=which, energy_range=energy_range)
+    if str(tmp).lower().strip()=="none": return None
     return Path(os.path.expanduser(str(tmp)) )
 
 @conffile_reader()

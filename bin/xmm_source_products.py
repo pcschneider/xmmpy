@@ -74,7 +74,7 @@ def scripts_from_directory(directory, source=None, tmp=None):
     return r
     
 
-def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.7", filename=None):
+def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
     """
       Generate script that downloads and processes a particular obsID
     """

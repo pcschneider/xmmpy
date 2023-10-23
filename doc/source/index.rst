@@ -66,7 +66,7 @@ Check regions::
 Correction region format (because ds9 cannot save regions to fits-files)::
 
     xmm_correct_region_file_format.py 0892000501/  
-    #(if only one config files, else provide config-file directly)
+    #(if only one config file in directory, else provide config-file directly)
 
 Generate source products::
 

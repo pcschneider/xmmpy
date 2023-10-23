@@ -3,6 +3,7 @@ import argparse
 from pathlib import Path
 from argparse import RawDescriptionHelpFormatter
 import glob
+import os
 
 def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
 
@@ -22,14 +23,17 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
     else:
         conf_fn = None
       
+
+    dirname =os.path.dirname(directory)
+
     r="import os\n"
     r+="import logging\n"
     r+="from xmmpy import Obs\n"
     r+="from xmmpy.etc import path4\n\n"
     if conf_fn:
-        r+="o = Obs(conf_file = \""+conf_fn+"\")\n"
+        r+="o = Obs(conf_file = \""+conf_fn+"\", directory = \""+dirname+"\")\n"
     else:
-        r+="o = Obs(\""+obsID+"\")\n"
+        r+="o = Obs(\""+obsID+"\", directory = \""+dirname+"\")\n"
     r+="o.exposures_from_directory()\n"    
     
     r+="cfn = os.path.expanduser(str(path4(o.config, which=\"datadir\").joinpath(\""+src_name.replace(" ","_")+"_"+obsID+".conf\")))\n"

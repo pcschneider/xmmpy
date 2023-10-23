@@ -57,14 +57,17 @@ def reg4det(det, config, which="src"):
 
 
 def wcs4xmm(fn):
-  #print()
+    
   ff = pyfits.open(fn)
+  if "HDUCLAS1" in ff[0].header and ff[0].header["HDUCLAS1"].strip() == "IMAGE":
+      return wcs.WCS(ff[0].header)
+  
   w = wcs.WCS(naxis=2)
-
   w.wcs.crpix = [ff[1].header["REFXCRPX"], ff[1].header["REFYCRPX"]]
   w.wcs.cdelt = [ff[1].header["REFXCDLT"], ff[1].header["REFYCDLT"]]
   w.wcs.crval = [ff[1].header["REFXCRVL"], ff[1].header["REFYCRVL"]]
   w.wcs.ctype = [ff[1].header["REFXCTYP"], ff[1].header["REFYCTYP"]]
 
+  #print("WCS:",w.print_contents())
   return w
       

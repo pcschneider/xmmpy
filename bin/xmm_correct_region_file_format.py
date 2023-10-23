@@ -40,6 +40,10 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
 
     updated = []
     for fn in fnames:
+        if not os.path.exists(fn):
+            print(fn, " does not exis.")
+            continue
+        
         try:
             ff = pyfits.open(fn)
             ff.close()
