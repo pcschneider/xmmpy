@@ -24,6 +24,8 @@ def path4_ll(config, which="datadir", energy_range=None):
         return path4(config,"datadir").joinpath(config["DATA"]["lcreldir"])
     elif which == "evtdir":
         return path4(config,"datadir").joinpath(config["DATA"]["evtreldir"])
+    elif which == "rgsdir":
+        return path4(config,"datadir").joinpath(config["DATA"]["rgsreldir"])
     
     elif which == "pn_evt":
         return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["pn_evt_file"])
@@ -240,6 +242,9 @@ def path4_ll(config, which="datadir", energy_range=None):
     elif which == "lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script"])
     
+    elif which == "RGS_script":
+        return path4(config, which="datadir").joinpath(config["RGS"]["script"])
+
     elif which == "ana_script":
         return path4(config, which="datadir").joinpath(config["FILENAMES"]["ana_script"])
     

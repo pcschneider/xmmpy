@@ -16,6 +16,7 @@ DATA:
   specreldir : "specs"
   lcreldir : "lcs"
   evtreldir : "evts"
+  rgsreldir : "rgs"
   detectors : ['pn', 'm1', 'm2']
   source_name : None
   
@@ -49,11 +50,16 @@ EVENTS:
   script_pn : event_ana_pn.sh
   script_m1 : event_ana_m1.sh
   script_m2 : event_ana_m2.sh
-  
+
+RGS:
+  script : RGS_ana.sh
+  gti : FALSE
+
 SOURCE PRODUCTS:
   spectra : TRUE
   light curves : TRUE
   events : TRUE
+  rgs : TRUE
   
 REGIONS:
     src : reg_src.fits 

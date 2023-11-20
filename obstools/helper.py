@@ -35,6 +35,26 @@ def sky_to_physical(skycoord, evts):
     tmp = w.world_to_pixel(skycoord)    
     return (tmp[0]+1, tmp[1]+1) # Due to different numbering in ds9 and python (empirically somewhat verified)
 
+
+
+def physical_to_sky(coord, evts):
+    """
+      Convert physical (detector) coordinate to sky coordinates
+
+      Parameters
+      ----------
+      coord : (x, y)
+    """
+    if isinstance(evts, str):
+        w = wcs4xmm(evts)
+    elif isinstance(evts, wcs.WCS):
+        w = evts
+    else:
+        raise Exception("Parameter \'evts\' must be either filename or wcs-instance.")
+    tmp = w.pixel_to_world([coord[0]], [coord[1]])[0]   
+    return (tmp.ra.degree, tmp.dec.degree) # Due to different numbering in ds9 and python (empirically somewhat verified)
+
+
 def reg4det(det, config, which="src"):
     idir = config["FILES"]["basedir"]
 

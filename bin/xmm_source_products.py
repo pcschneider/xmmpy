@@ -6,9 +6,6 @@ import os
 from difflib import SequenceMatcher
 import tempfile
 
-#def source_products():
-    #pass
-
 def scripts_from_config(config, tmp=None):
     r = "import logging\nfrom xmmpy.etc import default_config, read_config, path4\nfrom xmmpy import Obs\n\n"
     #r+= "conf = read_config(\""+config+"\")\n"
@@ -52,7 +49,6 @@ def scripts_from_directory(directory, source=None, tmp=None):
     else:
         try:
             config = get_best_matching_config("xmmpy.config")
-            #print(config)
         except:
             config = None
             
@@ -117,7 +113,13 @@ if __name__ == "__main__":
     parser.add_argument('--config', default=None,  help="An xmmpy config-file, path is relative to \'directory\', i.e., \'$directory/$config\'.")
     
     parser.add_argument('--script', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
-    
+
+    # spec=None, lc=None, evt=None, rgs=None
+    parser.add_argument('--product', default=None, help="Select data product. If nothing is provided, source product processin steps from config-file are used.\nOtherwise, only selected data products witll be generated.")
+    # parser.add_argument('--lc', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
+    # parser.add_argument('--evt', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
+    # parser.add_argument('--rgs', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
+
     args = parser.parse_args()
     
     print(scripts(directory=args.directory,source=args.source, config=args.config, filename=args.script))

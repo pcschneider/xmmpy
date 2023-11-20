@@ -285,6 +285,20 @@ class Obs():
         with open(ofn, "w") as oo:
             oo.write(r)
         return r
+    
+    def gen_rgs_shell_scripts(self ,sas_init=False):
+        from ..scripttools import rgs_script
+        ll = logging.getLogger("xmmpy")
+        r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
+        ofn = path4(self.config, which = "RGS_script")
+        x = rgs_script(self.config)
+        r+=x
+        with open(ofn, "w") as oo:
+            oo.write(r)
+        return r
 
     def gen_evt_shell_scripts(self, sas_init=False):
         from ..scripttools import evt_script
@@ -307,7 +321,7 @@ class Obs():
         
         
     @ofn_support    
-    def shell_scripts(self, spec=None, lc=None, evt=None, sas_init=True):
+    def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, sas_init=True):
         """
         Generate shell scripts for spectra (if True) and light curves (if lc==True)
         """
@@ -317,6 +331,8 @@ class Obs():
             lc = self.config["SOURCE PRODUCTS"]["light curves"]
         if evt is None:
             evt = self.config["SOURCE PRODUCTS"]["events"]
+        if rgs is None:
+            rgs = self.config["SOURCE PRODUCTS"]["events"]            
         ll = logging.getLogger("xmmpy")
         ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+").")
         r = "# xmmpy ana script\n\n"
@@ -331,6 +347,8 @@ class Obs():
             r+=self.gen_lc_shell_scripts()
         if evt:
             r+=self.gen_evt_shell_scripts()
+        if rgs:
+            r+=self.gen_rgs_shell_scripts()
         return r
     
         
