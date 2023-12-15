@@ -51,9 +51,9 @@ cd RGSDIR
 # #--------rgsproc----------------------
 echo '  running rgsproc, please be patient...'
   if [ "${gti}" == "n" ]; then
-    rgsproc srcra=${srcra} srcdec=${srcdec} withsrc=${withsrc} srclabel=${srcid} bkgcorrect=${bkgcor} withprefix=y prefix=${prfx} withmlambdacolumn=yes -V 2 # >& my_rgsproc_logfile;
+    rgsproc srcra=${srcra} srcdec=${srcdec} withsrc=${withsrc} srclabel=${srcid} bkgcorrect=${bkgcor} withprefix=y prefix=${prfx} withmlambdacolumn=yes RGSPROC_EXTRA_ARGS -V 2 # >& my_rgsproc_logfile;
   else
-    rgsproc srcra=${srcra} srcdec=${srcdec} withsrc=${withsrc} srclabel=${srcid} bkgcorrect=${bkgcor} withprefix=y prefix=${prfx} auxgtitables=${gtifile} withmlambdacolumn=yes -V 2 # >& my_rgsproc_logfile
+    rgsproc srcra=${srcra} srcdec=${srcdec} withsrc=${withsrc} srclabel=${srcid} bkgcorrect=${bkgcor} withprefix=y prefix=${prfx} auxgtitables=${gtifile} withmlambdacolumn=yes RGSPROC_EXTRA_ARGS -V 2 # >& my_rgsproc_logfile
   fi
   [ $? = 0 ] || die "rgsproc failed"
 echo '  ...done'
@@ -70,23 +70,33 @@ echo '  ...done'
 echo
 ###   R1  ###
 R1_table=$(ls ${prfx}R1*EVENLI*.FIT)
-R1_srclst=$(ls ${prfx}R1*SRCLI*.FIT)
-echo "Using R1 table='${R1_table}' and source list='${R1_srclst}' and srcid='${srcnr}'"
+if [ ${#R1_table} -ge 1 ];
+  then
+    R1_srclst=$(ls ${prfx}R1*SRCLI*.FIT)
+    echo "Using R1 table='${R1_table}' and source list='${R1_srclst}' and srcid='${srcnr}'"
 
-evselect table="${R1_table}:EVENTS" withimageset=yes imageset="${prfx}_spatial_R1.fits" xcolumn='M_LAMBDA' ycolumn='XDSP_CORR'
-evselect table="${R1_table}:EVENTS" withimageset=yes imageset="${prfx}_banana_R1.fits" xcolumn='M_LAMBDA' ycolumn='PI' withyranges=yes yimagemin=0 yimagemax=3000 expression="region(${R1_srclst}:RGS1_SRC${srcnr}_SPATIAL,M_LAMBDA,XDSP_CORR)"
-rgsimplot endispset="${prfx}_banana_R1.fits" spatialset="${prfx}_spatial_R1.fits" srcidlist="${srcnr}" srclistset="${R1_srclst}" withendispregionsets=yes withendispset=yes withspatialregionsets=yes withspatialset=yes device=/cps plotfile="${prfx}_region_R1.ps"
+    evselect table="${R1_table}:EVENTS" withimageset=yes imageset="${prfx}_spatial_R1.fits" xcolumn='M_LAMBDA' ycolumn='XDSP_CORR'
+    evselect table="${R1_table}:EVENTS" withimageset=yes imageset="${prfx}_banana_R1.fits" xcolumn='M_LAMBDA' ycolumn='PI' withyranges=yes yimagemin=0 yimagemax=3000 expression="region(${R1_srclst}:RGS1_SRC${srcnr}_SPATIAL,M_LAMBDA,XDSP_CORR)"
+    rgsimplot endispset="${prfx}_banana_R1.fits" spatialset="${prfx}_spatial_R1.fits" srcidlist="${srcnr}" srclistset="${R1_srclst}" withendispregionsets=yes withendispset=yes withspatialregionsets=yes withspatialset=yes device=/cps plotfile="${prfx}_region_R1.ps"
+  else 
+    echo "No R1 event table."
+fi
 
 ###   R2  ###
 
 R2_table=$(ls ${prfx}R2*EVENLI*.FIT)
-R2_srclst=$(ls ${prfx}R2*SRCLI*.FIT)
-echo
-echo "Using R2 table='${R2_table}' and source list='${R2_srclst}' and srcid='${srcnr}'"
+if [ ${#R2_table} -ge 1 ];
+  then
+    R2_srclst=$(ls ${prfx}R2*SRCLI*.FIT)
+    echo
+    echo "Using R2 table='${R2_table}' and source list='${R2_srclst}' and srcid='${srcnr}'"
 
-evselect table="${R2_table}:EVENTS" withimageset=yes imageset="${prfx}_spatial_R2.fits" xcolumn='M_LAMBDA' ycolumn='XDSP_CORR'
-evselect table="${R2_table}:EVENTS" withimageset=yes imageset="${prfx}_banana_R2.fits" xcolumn='M_LAMBDA' ycolumn='PI' withyranges=yes yimagemin=0 yimagemax=3000 expression="region(${R1_srclst}:RGS1_SRC${srcnr}_SPATIAL,M_LAMBDA,XDSP_CORR)"
-rgsimplot endispset="${prfx}_banana_R2.fits" spatialset="${prfx}_spatial_R2.fits" srcidlist="${srcnr}" srclistset="${R2_srclst}" withendispregionsets=yes withendispset=yes withspatialregionsets=yes withspatialset=yes device=/cps plotfile="${prfx}_region_R2.ps"
+    evselect table="${R2_table}:EVENTS" withimageset=yes imageset="${prfx}_spatial_R2.fits" xcolumn='M_LAMBDA' ycolumn='XDSP_CORR'
+    evselect table="${R2_table}:EVENTS" withimageset=yes imageset="${prfx}_banana_R2.fits" xcolumn='M_LAMBDA' ycolumn='PI' withyranges=yes yimagemin=0 yimagemax=3000 expression="region(${R1_srclst}:RGS1_SRC${srcnr}_SPATIAL,M_LAMBDA,XDSP_CORR)"
+    rgsimplot endispset="${prfx}_banana_R2.fits" spatialset="${prfx}_spatial_R2.fits" srcidlist="${srcnr}" srclistset="${R2_srclst}" withendispregionsets=yes withendispset=yes withspatialregionsets=yes withspatialset=yes device=/cps plotfile="${prfx}_region_R2.ps"
+  else 
+    echo "No R2 event table."
+fi
 
 
 #-------- done ------------------
@@ -96,7 +106,7 @@ cd ${pwd}
 
 
 @ofn_support
-def rgs_script(conf):
+def rgs_script(conf, rgsproc_extra_args=None):
     #print(exp.config)
     gti = conf["RGS"]["gti"]
         
@@ -128,6 +138,7 @@ def rgs_script(conf):
     n_script = script_content.replace("AAAAAAAA",conf["obsID"])
     n_script = n_script.replace("BBBBBBBB","4") 
     n_script = n_script.replace("CCCCCCCC","5") 
+    # print("XXX", path4(conf,"SAS_init_script"), conf  )
     n_script = n_script.replace("SASINIT", str(os.path.abspath(path4(conf,"SAS_init_script"))))
     n_script = n_script.replace("EEEEEEEE",str(x)) 
     n_script = n_script.replace("FFFFFFFF",str(y)) 
@@ -137,6 +148,10 @@ def rgs_script(conf):
     n_script = n_script.replace("RGSDIR", str(os.path.abspath(spec_dir)))
     n_script = n_script.replace("YYYYYYYY", conf["DATA"]["source_name"]+", obsID "+conf["obsID"]+" -> "+str(os.path.abspath(spec_dir)))
     n_script = n_script.replace("ZZZZZZZZ",str(conf["XMM"]["tools"])) 
+    if rgsproc_extra_args is not None:
+       n_script = n_script.replace("RGSPROC_EXTRA_ARGS", str(rgsproc_extra_args))
+    else:
+       n_script = n_script.replace("RGSPROC_EXTRA_ARGS","")       
     #print(n_script)
     return n_script
     

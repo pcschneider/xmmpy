@@ -6,6 +6,9 @@ import astropy.io.fits as pyfits
 from astropy import wcs
 
 def ds9_to_physical(fname, evt_fn=None):
+  """
+    Regions from ds9-region file
+  """
   regs = regions.Regions.read(fname)
   phys = True
   for r in regs:
@@ -21,6 +24,7 @@ def ds9_to_physical(fname, evt_fn=None):
       rr.append(r.to_pixel(w))
     regs = rr  
   return regs    
+
 
 def sky_to_physical(skycoord, evts):
     """
@@ -51,7 +55,7 @@ def physical_to_sky(coord, evts):
         w = evts
     else:
         raise Exception("Parameter \'evts\' must be either filename or wcs-instance.")
-    tmp = w.pixel_to_world([coord[0]], [coord[1]])[0]   
+    tmp = w.pixel_to_world([coord[0]-1], [coord[1]-1])[0]   
     return (tmp.ra.degree, tmp.dec.degree) # Due to different numbering in ds9 and python (empirically somewhat verified)
 
 
@@ -77,7 +81,9 @@ def reg4det(det, config, which="src"):
 
 
 def wcs4xmm(fn):
-    
+  """
+  WCS-instance from XMM-Newton event file, or image
+  """  
   ff = pyfits.open(fn)
   if "HDUCLAS1" in ff[0].header and ff[0].header["HDUCLAS1"].strip() == "IMAGE":
       return wcs.WCS(ff[0].header)
@@ -87,7 +93,5 @@ def wcs4xmm(fn):
   w.wcs.cdelt = [ff[1].header["REFXCDLT"], ff[1].header["REFYCDLT"]]
   w.wcs.crval = [ff[1].header["REFXCRVL"], ff[1].header["REFYCRVL"]]
   w.wcs.ctype = [ff[1].header["REFXCTYP"], ff[1].header["REFYCTYP"]]
-
-  #print("WCS:",w.print_contents())
   return w
       

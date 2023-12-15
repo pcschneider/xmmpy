@@ -2,15 +2,20 @@
 import argparse
 import tempfile
 from pathlib import Path
+import os
 
 pcall = "/home/majestix/hdd/python/bin/python3.8"
 
-def retriever(obsID, directory, pythoncall=pcall, filename=None):
+def processor(fname, target, pythoncall=pcall, filename=None, verbose=1):
     """
-      Generate script that downloads and processes a particular obsID
+    Takes an 'ODF' (obsID.tar.gz) and processes it.
     """
     tmp1 = tempfile.NamedTemporaryFile(delete=True, dir='.')
     tmp2 = tempfile.NamedTemporaryFile(delete=True, dir='.')
+
+    obsID = os.path.basename(fname).split(".")[0]
+    directory = os.getcwd()
+    print("Using obsID=",obsID, " and directory=", directory)
     rr = pythoncall+" <<< \'"
     rr+="""
 from xmmpy import Obs 
@@ -21,11 +26,10 @@ o = Obs(obsID=\""""
     rr+='\", populate=False)\n'
     rr+='o.config["DATA"]["basedir"] = \"'
     rr+=str(directory)
-    rr+="\""
-    rr+="""
-o.download_odf()
-r = o.odf_reduction_script()
+    rr+="\"\n"
+    rr+="r = o.odf_reduction_script()"
 
+    rr+="""
 o.write_config(\""""+tmp1.name+"""\")
 rs = path4(o.config, which="odf_reduction_script_fn")
 with open(\""""+tmp2.name+"""\", "w") as oo:
@@ -45,8 +49,9 @@ with open(\""""+tmp2.name+"""\", "w") as oo:
     if filename is not None:
         with open(filename,'w') as oo:
             oo.write(rr)
-    
+    print("filename",filename)
     return rr
+
 
 if __name__ == "__main__":
     # requires:
@@ -54,15 +59,15 @@ if __name__ == "__main__":
     # export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
     # export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/scripttools
     parser = argparse.ArgumentParser(
-                    prog = 'xmm_retrieve',
-                    description = 'Generate script that downloads and processes a particular obsID',
+                    prog = 'xmm_process',
+                    description = 'Generate script that processes a particular obsID',
                     epilog = 'Use at your own discretion...')
     
-    parser.add_argument('obsID')    
-    parser.add_argument('directory', default='.', nargs='?')
+    parser.add_argument('fname')
+    parser.add_argument('-target', default=None)    
     parser.add_argument('--script', default=None)
     
     args = parser.parse_args()
     
-    print(retriever(args.obsID,str(Path(args.directory).resolve()),filename=args.script))
+    print(processor(args.fname,args.target, filename=args.script))
     

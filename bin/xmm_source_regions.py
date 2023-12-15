@@ -4,9 +4,17 @@ from pathlib import Path
 from argparse import RawDescriptionHelpFormatter
 import glob
 import os
+# from astropy.coordinates import SkyCoord
 
-def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
-
+def source_regions(src_name="my_source",coord=None, directory=".", pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
+    
+    # if coord is not None:
+    #     coord = SkyCoord(coord, unit=("hourangle", "deg"))
+    #     print("Using coordinate: ", coord)
+    if coord is not None:
+        coord = "\""+coord.strip()+"\""
+    else:
+        coord = "None"
     sas_init = glob.glob(directory+"/sas_*.sh")
     if len(sas_init) != 1:
         raise Exception("Cannot find sas-init-file in "+directory)
@@ -38,7 +46,7 @@ def source_regions(src_name, directory, pythoncall="/home/majestix/hdd/python/bi
     
     r+="cfn = os.path.expanduser(str(path4(o.config, which=\"datadir\").joinpath(\""+src_name.replace(" ","_")+"_"+obsID+".conf\")))\n"
     r+="print(\"Writing config to \", cfn)\n"
-    r+="o.regions4source(\""+src_name+"\", ofn=cfn)\n"
+    r+="o.regions4source(\""+src_name+"\", coord="+coord+", ofn=cfn)\n"
     r+="ll = logging.getLogger(\"xmmpy\")\n"
     r+="ll.info(\"New config-file for source=\\\""+src_name+"\\\" and obsID=\"+o.config[\"obsID\"]+\": \\n\"+cfn)\n"
     
@@ -57,10 +65,11 @@ if __name__ == "__main__":
                     epilog = 'Use at your own discretion...', formatter_class = RawDescriptionHelpFormatter)
     
     parser.add_argument('directory', default='.', nargs=1, help="directory must contain xmmpy{obsID}.conf and sas_{obsID}.sh. ")
-    parser.add_argument('source', nargs=1, help="Simbad findable name.")    
+    parser.add_argument('source', nargs='?', help="Simbad findable name.")
+    parser.add_argument("--coord", nargs='?', help="Coordinates where to extract data")    
     parser.add_argument('--script', default=None)
     
     args = parser.parse_args()
     
-    print(source_regions(args.source[0],str(Path(args.directory[0]).resolve()),filename=args.script))
+    print(source_regions(src_name=args.source,coord=args.coord, directory=str(Path(args.directory[0]).resolve()),filename=args.script))
     

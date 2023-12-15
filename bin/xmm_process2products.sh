@@ -6,8 +6,14 @@ source=$(echo ${name// /_})
 
 if [ -z $1 ] 
   then
-    echo "No obsID provided, exiting..."
-    exit 1
+    echo "No filename provided, exiting..."
+    return 1
+  fi
+
+if [ -z $2 ] 
+  then
+    echo "No target name provided, exiting..."
+    return 1
   fi
 
 if [ -z "$3" ]
@@ -26,27 +32,34 @@ if [ ! -d "$directory" ]; then
   exit 1
 fi
 
+filename=${1}
+target=${2}
+bname=$(basename "$filename" | cut -d. -f1)
+
 
 export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/scripttools
 export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/bin
 export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
 
+heainit
+sasinit
 
+echo "Recognized parameters; filename='${filename}', target='${target}', 'directory='${directory}'"
+ofn=${directory}/xmm_process_${bname}.sh
+echo "Writing XMM-processing script to ${ofn}"
 
-ofn=${directory}/xmm_retrieve_${obsID}.sh
-echo "Writing retrieve script to ${ofn}"
 lfn=${ofn%.sh}.log
-xmm_retrieve.py $obsID ${directory} --script=$ofn
+xmm_process.py $filename -target=${target} --script=$ofn
 echo "Running script written to '${ofn}' and log to '${lfn}'"
 source ${ofn}  2>&1 | tee ${lfn}
 
-ofn=${directory}/${obsID}/xmm_source_regions_${source}.sh
+ofn=${directory}/${bname}/xmm_source_regions_${source}.sh
 lfn=${ofn%.sh}.log
 echo "Writing source region script to ${ofn}"
-xmm_source_regions.py ${directory}/${obsID} "${name}" --script=${ofn}
+xmm_source_regions.py ${directory}/${bname} "${name}" --script=${ofn}
 source ${ofn}  2>&1 | tee ${lfn}
 
-ofn=${directory}/${obsID}/xmm_source_products_${source}.sh
+ofn=${directory}/${bname}/xmm_source_products_${source}.sh
 echo "Writing source product script to ${ofn}"
-xmm_source_products.py ${directory}/${obsID} "${name}" --script=${ofn}
+xmm_source_products.py ${directory}/${bname} "${name}" --script=${ofn}
 source ${ofn}  2>&1 | tee ${lfn}

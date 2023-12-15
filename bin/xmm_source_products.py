@@ -1,17 +1,23 @@
 #!/usr/bin/python3
 import argparse
-from argparse import RawDescriptionHelpFormatter
+from argparse import RawDescriptionHelpFormatter, RawTextHelpFormatter
 import glob
 import os 
 from difflib import SequenceMatcher
 import tempfile
 
-def scripts_from_config(config, tmp=None):
+possible_data_products = ["rgs","spec","lc", "evt"]
+
+def scripts_from_config(config, tmp=None, products=None):
     r = "import logging\nfrom xmmpy.etc import default_config, read_config, path4\nfrom xmmpy import Obs\n\n"
     #r+= "conf = read_config(\""+config+"\")\n"
     r+= "o = Obs(conf_file = \""+config+"\")\n"
     r+= "cfn = str(path4(o.config, which=\"ana_script\"))\n"
-    r+= "o.shell_scripts(ofn = cfn)\n"
+    if products is None:
+        r+= "o.shell_scripts(ofn = cfn)\n"
+    else:
+        tp = ", ".join([str(x)+"="+str(products[x]) for x in products])
+        r+= "o.shell_scripts(ofn = cfn, "+tp+")\n"
     if tmp:
         r+= "with open(\""+tmp.name+"\", \"w\") as oo:\n"
         r+= "    oo.write(str(cfn))\n"
@@ -20,7 +26,7 @@ def scripts_from_config(config, tmp=None):
     
     return r
 
-def scripts_from_directory(directory, source=None, tmp=None):
+def scripts_from_directory(directory, source=None, tmp=None, products=None):
     def get_best_matching_config(name):
         br, bc = 0, ""
         for pc in possible_configs:
@@ -57,7 +63,11 @@ def scripts_from_directory(directory, source=None, tmp=None):
         raise Exception("No config found in directory  \'"+str(directory)+"\', and auto-config not implemented yet...")
     r+= "o = Obs(conf_file = \""+config+"\")\n"
     r+= "cfn = str(path4(o.config, which=\"ana_script\"))\n"
-    r+= "o.shell_scripts(ofn = cfn)\n"  
+    if products is None:
+        r+= "o.shell_scripts(ofn = cfn)\n"  
+    else:
+        print("YYY",products)
+        r+=""
     if tmp:
         r+= "with open(\""+tmp.name+"\", \"w\") as oo:\n"
         r+= "    oo.write(str(cfn))\n"
@@ -70,17 +80,27 @@ def scripts_from_directory(directory, source=None, tmp=None):
     return r
     
 
-def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None):
+def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None, products=None):
     """
       Generate script that downloads and processes a particular obsID
     """
+    def check_products_arg(args):
+        if args is None: return None
+        tp = []
+        for x in args:
+            if x.lower() in possible_data_products: tp.append(x.lower())
+            else: print("Don't know what to do with 'product=", x,"'")
+        dct = {p: True if p in tp else False for p in possible_data_products}
+        if len(dct) == 0: return None
+        return dct
+    
     tmp = tempfile.NamedTemporaryFile(delete=True, dir='.')
     ret = None
-    
+    checkedp = check_products_arg(products)
     if config is not None:
-       ret = pythoncall+ " <<< '\n"+scripts_from_config(config, tmp=tmp)+"'\n"  
+       ret = pythoncall+ " <<< '\n"+scripts_from_config(config, tmp=tmp, products=checkedp)+"'\n"  
     elif directory is not None:
-        ret = pythoncall+ " <<< '\n"+scripts_from_directory(directory, source=source, tmp=tmp)+"'\n"  
+        ret = pythoncall+ " <<< '\n"+scripts_from_directory(directory, source=source, tmp=tmp, products=checkedp)+"'\n"  
     else:
         print("You need to provide either a directory, a directory and source name, or a config-file.")
     ret+="\n"
@@ -98,12 +118,14 @@ def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix
 if __name__ == "__main__":
     # requires:
     #
+    # export xmmpy=/home/majestix/hdd/tools/xmmpy
+    # export PATH=$PATH:${xmmpy}/bin
     # export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
-    # export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/scripttools
+
     parser = argparse.ArgumentParser(
                     prog = 'xmm_source_products',
                     description = 'Generate script that produces source products for a given directory.\n Only some parameters are exposed, fine-tuning by adjusting the xmmpy-config file.\n Default xmm-config-file will be gerenated upon first run if not existent.',
-                    epilog = 'There are three options:\n 1) provide an xmmpy-config file\n 2) provide a directory, the script will generate a standard xmmpy-config file assuming \n       that src.reg\', \'bkg_pn.reg\', \'bkg_m1.reg\', and \'bkg_m2.reg\' exist in the odata directory.\n 3) provide a directory and source name in which case the same as in 2) applies, but \n       with \'_sourcename\' included in the regions files (e.g., \'src_sourcename.reg\', etc.).\n\n Use at your own discretion...', formatter_class = RawDescriptionHelpFormatter)
+                    epilog = 'There are three options:\n 1) provide an xmmpy-config file\n 2) provide a directory, the script will generate a standard xmmpy-config file assuming \n       that src.reg\', \'bkg_pn.reg\', \'bkg_m1.reg\', and \'bkg_m2.reg\' exist in the odata directory.\n 3) provide a directory and source name in which case the same as in 2) applies, but \n       with \'_sourcename\' included in the regions files (e.g., \'src_sourcename.reg\', etc.).\n\nExample: \n\n Use at your own discretion...', formatter_class = RawTextHelpFormatter)
     
     #parser.add_argument('obsID')    
     #, nargs='?', default=os.getcwd()
@@ -115,12 +137,9 @@ if __name__ == "__main__":
     parser.add_argument('--script', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
 
     # spec=None, lc=None, evt=None, rgs=None
-    parser.add_argument('--product', default=None, help="Select data product. If nothing is provided, source product processin steps from config-file are used.\nOtherwise, only selected data products witll be generated.")
-    # parser.add_argument('--lc', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
-    # parser.add_argument('--evt', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
-    # parser.add_argument('--rgs', default=None, help="Generate script-file, filename will be the value provided by the \'script\'-argument.")
+    parser.add_argument('-p', '--products', default=None, nargs='*', help="Optionally select specific data product(s); select 1+ from: "+str(possible_data_products)+".\nOverrides source product processing steps from config-file, i.e., only selected data products will be generated.")#, formatter_class=RawTextHelpFormatter)
 
     args = parser.parse_args()
     
-    print(scripts(directory=args.directory,source=args.source, config=args.config, filename=args.script))
+    print(scripts(directory=args.directory,source=args.source, config=args.config, filename=args.script, products=args.products))
     

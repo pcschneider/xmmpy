@@ -13,6 +13,7 @@ def path4(config, which="datadir", energy_range=None):
 def path4_ll(config, which="datadir", energy_range=None):
     """
     """
+    which = which.lower()
     #print("which=",which)
     if which == "datadir":
             return Path(config["DATA"]["basedir"]).joinpath(config["obsID"])
@@ -207,12 +208,14 @@ def path4_ll(config, which="datadir", energy_range=None):
     elif which == "odf_reduction_script_fn":
         #if obsid == None: raise Exception("Need an observation for which='odf_reduction_script_fn'")
         return Path(config["DATA"]["basedir"]).joinpath(config["FILENAMES"]["odf_reduction_fn"]+config["obsID"]+".sh")
-    elif which == "SAS_init_script":
+    elif which == "sas_init_script":
         return path4(config, which="datadir").joinpath(config["XMM"]["SAS_init_script"])
 
     elif which == "conf-file":
         return path4(config, which='datadir').joinpath(config["obsID"]).joinpath("xmmpy.conf")
     
+# SCRIPTS
+
     elif which == "pn_spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script_pn"])
     elif which == "m1_spec_script":
@@ -242,7 +245,7 @@ def path4_ll(config, which="datadir", energy_range=None):
     elif which == "lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script"])
     
-    elif which == "RGS_script":
+    elif which == "rgs_script":
         return path4(config, which="datadir").joinpath(config["RGS"]["script"])
 
     elif which == "ana_script":

@@ -66,7 +66,7 @@ def fits_single_region_writer(line, ofn, overwrite=True, verbose=1):
     p = re.compile('([a-z]*\()')
     m = p.match(line.strip())
     region_shape = m.group()[0:-1]
-    print("   ->  \'%s\'" % region_shape)
+    if verbose>1: print("   ->  \'%s\'" % region_shape)
         
             
     if region_shape == "circle":
@@ -75,7 +75,7 @@ def fits_single_region_writer(line, ofn, overwrite=True, verbose=1):
         x = mm.group(2)
         y = mm.group(3)
         r = mm.group(4)
-        print("x=<%s>, y=<%s>, r=<%s>" % (x, y, r))
+        if verbose>1: print("x=<%s>, y=<%s>, r=<%s>" % (x, y, r))
         cols = [pyfits.Column(name="SHAPE", array=["CIRCLE" ], format='16A')]
         cx = pyfits.Column(name="X",coord_type='RA---TAN', coord_unit = 'deg', array=[x], format='E')
         cy = pyfits.Column(name="Y",coord_type='DEC--TAN', coord_unit = 'deg', array=[y], format='E')
@@ -92,7 +92,7 @@ def fits_single_region_writer(line, ofn, overwrite=True, verbose=1):
         angle1 = mm.group(5)
         r0 = mm.group(7)
         r1 = mm.group(8)
-        print("  x=<%s>, y=<%s>, r0=<%s>, r1=<%s>, angle0=<%s>, angle1=<%s>" % (x, y, r0, r1, angle0, angle1))
+        if verbose>1: print("  x=<%s>, y=<%s>, r0=<%s>, r1=<%s>, angle0=<%s>, angle1=<%s>" % (x, y, r0, r1, angle0, angle1))
 
         cols = [pyfits.Column(name="SHAPE", array=["Pie","Annulus"], format='16A')]        
         cx = pyfits.Column(name="X",coord_type='RA---TAN', coord_unit = 'pix', array=[x,x], format='E')

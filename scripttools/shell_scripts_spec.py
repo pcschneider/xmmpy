@@ -17,6 +17,11 @@ backscale spectrumset=FLTSETBKG badpixlocation=EVTFILE
 rmfgen spectrumset=FLTSETSRC rmfset=SRCRMF
 arfgen spectrumset=FLTSETSRC arfset=SRCARF withrmfset=yes rmfset=SRCRMF badpixlocation=EVTFILE detmaptype=psf
 
+
+if [ -f BINSPEC ]; then
+   echo "File 'BINSPEC' exists."
+   mv BINSPEC BINSPEC_old
+fi
 grppha FLTSETSRC BINSPEC comm="chkey respfile SRCRMF & chkey backfile FLTSETBKG & chkey ancrfile SRCARF & YYYYYYYY & exit"
 
 """

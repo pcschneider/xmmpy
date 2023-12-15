@@ -105,7 +105,7 @@ FILENAMES:
     m1_crr_lc_prefix : "lc_crr_m1"
     m2_crr_lc_prefix : "lc_crr_m2"
     
-    ana_script : EPIC_ana.sh
+    ana_script : ana.sh
     
     odf_reduction_fn : reduce_odf_
     config-file-postfix : .xmmpy
@@ -117,7 +117,8 @@ FILENAMES:
     bd = str(bd).replace(str(Path.home()), "~")
     config["DATA"].update({"basedir":str(bd)})
     return config
-  
+
+
 def update_value_in_config(ifn, updater=None, ofn=None):
     """
     Change one parameter in config-file
@@ -240,6 +241,14 @@ def update_config(dct1, dct2, verbose=1):
     if verbose>2: print("XXX",dct1)
     return dct1
 
+def config_file_updater(ifn, dct, ofn=None, verbose=1, overwrite=True):
+    """
+    """
+    cnf = read_config(ifn)
+    n = update_config(cnf, dct)
+    if ofn is not None:
+        write_config(n, ofn=ofn, overwrite=overwrite)
+    return n
 
 def update_source_in_config(config, source):
     """
@@ -264,9 +273,7 @@ def update_source_in_config(config, source):
         else: raise Exception("Only SPECTRA, LIGHT CURVES, and EVENTS allowed as sections names.")
         scrpt_new =  str(scrpt_old.parent.joinpath(src_on+"_"+osect+"_script_"+typ+".sh"))
         config[sect]["script_"+typ] = scrpt_new
-        
         ll.debug(sect+":script_"+typ+" -> "+scrpt_new)
-        
         
     def update_source_product_names(d, typ):
         if typ == "spec_prefix": 
@@ -285,9 +292,7 @@ def update_source_in_config(config, source):
             new_pfx =  str(old_pfx.parent.joinpath(src_on+mdl+pdct+"_"+d))
             config["FILENAMES"][k] = new_pfx
             ll.debug("FILENAMES:"+k+" -> "+new_pfx)
-        
-        
-        
+
     src_on = source.strip().replace(" ","_")
     
     ll = logging.getLogger("xmmpy")
@@ -311,7 +316,8 @@ def update_source_in_config(config, source):
     update_key_value(config["SPECTRA"], "script", src_on+"_spec_ana.sh")   
     update_key_value(config["LIGHT CURVES"], "script", src_on+"_lc_ana.sh")   
     update_key_value(config["EVENTS"], "script", src_on+"_evt_ana.sh")   
- 
+
+
 def conffile_reader(arg=0, verbose=1):
     """
     Can be used to decorate functions that require a config-dictionary as input to also accept filenames with a config.
@@ -354,6 +360,26 @@ def conffile_reader(arg=0, verbose=1):
         return wrapper    
     return creader
 
+
+def make_abs_path(cnf_fn, ofn=None):
+    """
+    Replace relative pathes with pathes relative to '~'
+    """
+    cnf = read_config(cnf_fn)
+    bd = cnf["DATA"]["basedir"]
+    p = os.path.expanduser(Path(bd))
+    if os.path.exists(p) and os.path.isdir(p):
+        new_p = os.path.abspath(p)
+    else:
+        raise Exception("The config-file is invalid as 'exists="+str(os.path.exists(p))+"' and 'dir="+str(os.path.isdir(p))+"' for 'path="+str(p)+"'.")
+    relp = os.path.relpath(new_p, start=os.path.expanduser("~"))
+    update_p = "~/"+str(relp)
+    print(new_p, relp, update_p)
+    # cnf["DATA"]["basedir"] = update_p
+    # cnf.write(ofn)
+    update_value_in_config(cnf_fn, lambda c: c["DATA"].update({"basedir":str(update_p)}), ofn=ofn)
+
+
 def read_config(filename, verbose=1):
     """
     Make sure that the configuration parameters are available
@@ -385,4 +411,65 @@ def read_config(filename, verbose=1):
         raise ValueError("read_config - Cannot use object provided as \'config\'.")
     
     return update_config(df, config)
+
+
+def write_config(cnf, ofn='test.conf', overwrite=False):
+    from yaml import dump 
+
+    rr = dump(cnf)
+    if ofn is None:
+        raise Exception("Need to provide 'ofn'.")
+    if overwrite==False and os.path.exists(ofn):
+        raise Exception("Filename ("+str(ofn)+") exists and 'overwrite==False'.")
+    with open(ofn, "w") as oo:
+        oo.write(rr)
+        
+def cnf_support(kw):
+    """
+    Adds the  keyword-option to a function, i.e., the return-value can be written to a file specified by 'cnf'
+    """
+    def deco(func, verbose=1):
+        # def cnf_support(func, verbose=1):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            nargs = args
+            if isinstance(kw, int):
+                if len(args)<kw:
+                    raise Exception("Not enough arguments provided, need at least "+str(kw)+" args.")
+                cf = args[kw]
+                # if cf isinstance()
+                if not isinstance(cf, dict):
+                    cf = read_config(cf)
+                    nargs = *args[0:kw], cf, *args[kw+1:]
+                    nargs = tuple([x for x in nargs if x!=() ])
+                    if verbose>1: print("int arg, new args: ",nargs)
+            elif kw in kwargs:
+                cf = kwargs[kw]
+                if not isinstance(cf, dict):
+                    cf = read_config(cf)
+                    kwargs[kw] = cf
+                    if verbose>1: print("kw arg, new kwargs: ",kwargs)
+            r = func(*nargs, **kwargs)
+            return r
+        return wrapper    
+    return deco
     
+  
+def cnf_ofn_support(func, verbose=1):
+    """
+    Adds the ofn keyword-option to a function, i.e., a returned config can be written to a file specified by 'ofn=x.conf'
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if "ofn" in kwargs:
+            ofn = kwargs["ofn"]
+            del kwargs["ofn"]
+        else:
+            ofn = None
+        r = func(*args, **kwargs)
+        if ofn is not None:
+            #ll = logging.get_logger()
+            write_config(r, ofn, overwrite=True)
+        return r
+    return wrapper    
+  

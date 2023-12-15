@@ -1,4 +1,7 @@
 from .io_helper import ofn_support
+from .my_configs import cnf_support
+from .my_paths import path4
+import os
 
 @ofn_support
 def source_region(source_name, observation=None, radius=15):
@@ -26,6 +29,65 @@ def source_region(source_name, observation=None, radius=15):
     region_sky = regions.CircleSkyRegion(center=center_sky, radius=radius * u.arcsec)
     return region_sky.serialize(format='ds9')
 
+def source_region_from_sourcelist(cnf_fn):
+    """
+    Nearest source from source list
+
+    Returns
+    -------
+    coord : SkyCoord
+        of nearest source
+    """
+    pass
+
+@cnf_support(0)
+def correct_region_format_to_fits(cnf, verbose=10):
+    """
+    Check if all regions used in the config are in the correct (fits) format
+      and correct the format if necessary (and possible)
+    
+    Parameters
+    ----------
+    cnf : str, dict
+        Configuration (filename or dictionary)
+    
+    Returns
+    -------
+    updated_files : list, [] if no files were updated
+    """
+    from astropy.io import fits as pyfits
+    from .io_helper import fits_region_file_writer
+    from regions import CirclePixelRegion, PixCoord
+    def check_one_region(fn):
+        if verbose>1: print("Checking ",fn)
+        fn = os.path.abspath((os.path.expanduser(fn)))
+        try:
+            ff = pyfits.open(fn)
+            ff.close()
+        except:
+            print(fn, " is not a fits-file")
+            infile = open(fn, "r")
+            for l in infile:
+                print(l)
+                if "circle" in l:
+                    x = l.strip()[7:-1]
+                    print("x",x)
+                    a,b,c = x.split(",")
+                    a,b,c = float(a), float(b), float(c)
+                    print(a,b,c)
+                    #Regions.PixRegion
+                    regions = [CirclePixelRegion(PixCoord(x=a, y=b), radius=c)]
+            updated.append(fn)
+            if verbose>1: print("regions:",regions)
+            fits_region_file_writer(regions[0], fn)
+
+    updated = []
+    check_one_region(path4(cnf, "src_reg"))
+    for det in cnf["DATA"]["detectors"]:
+        fn = path4(cnf, "bkg_"+det+"_reg")
+        check_one_region(fn)
+    return updated
+
 def source_center(fn, region_index=0, wcs_ref_file=None, verbose=1):
     """
     RA, Dec from filename
@@ -42,10 +104,11 @@ def source_center(fn, region_index=0, wcs_ref_file=None, verbose=1):
                 if rff[1].data["SHAPE"][region_index].upper() in ["CIRCLE"]:
                     sx, sy = rff[1].data["X"][region_index], rff[1].data["Y"][region_index]
     elif fnextension == ".reg":
-        print("REG")
+        raise Exception("Not implemented yet")
     
-    return physical_to_sky((sx, sy), wcs_ref_file)
-    return 0,0
+    if wcs_ref_file is not None:
+        return physical_to_sky((sx, sy), wcs_ref_file)
+    return (sx, sy)
 
 # def convert_physical_to_degree(sx, sy, wcs_ref_file=None):
 #     """

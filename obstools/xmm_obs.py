@@ -7,7 +7,7 @@ import copy
 import logging
 import astropy.io.fits as pyfits
 import xmmpy.obstools.xmm_exp as xe
-from xmmpy.etc import read_config, addFileHandler, setup_logging, default_config, ofn_support, update_source_in_config
+from xmmpy.etc import read_config, addFileHandler, setup_logging, default_config, ofn_support, update_source_in_config, cnf_support
 #from xmmpy.etc import shell_scripts as xmm_scripts
 from yaml import dump 
 from ..etc import path4
@@ -43,6 +43,7 @@ class Obs():
     :ivar exposures: dictionary holding the exposures, keys are the expIDs
     """
 
+    @cnf_support("conf_file")
     def __init__(self, obsID=None, conf_file = None, directory = None, populate=True):
         """
         Parameters
@@ -61,7 +62,7 @@ class Obs():
             yy += "No config file provided, using default values.\n"
             self.config = default_config(obsID)
         else:
-            self.config = read_config(conf_file)
+            self.config = conf_file
             if obsID is not None:
                 if self.config["obsID"] != obsID:
                     raise ValueError("obsID in provided config-file ("+str(self.config["obsID"])+") and as argument do not match ("+str(obsID)+").")
@@ -188,10 +189,13 @@ class Obs():
             ra, dec = ra.replace(" ", ":"), dec.replace(" ",":")
             c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), pm_ra_cosdec = result_table["PMRA"][0]*u.mas/u.yr, pm_dec = result_table["PMDEC"][0]*u.mas/u.yr, obstime="J2000")
         else:
-            c = coord            
+            c = SkyCoord(coord, unit=(u.hourangle, u.deg))
         
         dt = self["decimalyear"]-2000.
-        cc = c.apply_space_motion(dt=dt * u.year)
+        try:
+            cc = c.apply_space_motion(dt=dt * u.year)
+        except:
+            cc = c
         
         update_source_in_config(self.config, source)
         
@@ -199,7 +203,7 @@ class Obs():
             regs = e.regions4coordinates(cc, source_name=source)
             
         return dump(self.config)
-        
+
     def exposures_from_directory(self):
         """
           Populate exposures using files found in particular directory
@@ -286,7 +290,23 @@ class Obs():
             oo.write(r)
         return r
     
-    def gen_rgs_shell_scripts(self ,sas_init=False):
+    def gen_rgs_shell_scripts(self ,sas_init=False, rgsproc_extra_args=None):
+        """
+        Generate script to extract RGS spectrum
+
+        Writes script to 'RGS_script'-file from config
+        
+        Parameters
+        ----------
+        sas_init : boolean
+            Add 'source SAS-init script'
+        rgsproc_extra_args : str
+            Arguments to be appended to rgsproc
+        
+        Returns
+        -------
+        script content
+        """
         from ..scripttools import rgs_script
         ll = logging.getLogger("xmmpy")
         r = ""
@@ -294,7 +314,7 @@ class Obs():
             sfn = str(path4(self.config, "SAS_init_script"))
             r+="source "+sfn+"\n\n"
         ofn = path4(self.config, which = "RGS_script")
-        x = rgs_script(self.config)
+        x = rgs_script(self.config, rgsproc_extra_args=rgsproc_extra_args)
         r+=x
         with open(ofn, "w") as oo:
             oo.write(r)
