@@ -5,6 +5,7 @@ import glob
 import xmmpy.obstools.helper as helper
 from xmmpy.etc import path4, fits_region_file_writer
 import os 
+from astropy.time import Time
 
 class Exposure():
   def __init__(self, evt_filename, config):
@@ -25,19 +26,34 @@ class Exposure():
   
   def __getitem__(self, k):
       if isinstance(k, str) and k.lower() == "decimalyear":
-          from astropy.time import Time
+          #from astropy.time import Time
           with pyfits.open(self.evt_filename) as ff:
               x = ff[0].header["DATE-OBS"]
           d = Time(x, format='isot', scale='utc').decimalyear
           return d
+      
       elif isinstance(k, str) and k.lower() == "filter":
           with pyfits.open(self.evt_filename) as ff:
-              x = ff[0].header["Filter"]
+              return ff[0].header["Filter"]
+              
       elif isinstance(k, str) and k.lower() == "exposure":
-          print(self.evt_filename)
           with pyfits.open(self.evt_filename) as ff:
-              x = ff[0].header["Duration"]         
-          return x
+              return ff[0].header["Duration"]
+            
+      elif isinstance(k, str) and k.lower() == "start":
+          # Return decimalyear of OBSSTART
+          with pyfits.open(self.evt_filename) as ff:
+              x = ff[0].header["DATE-OBS"]
+              return Time(str(x), format='isot')
+
+      elif isinstance(k, str) and k.lower() == "stop":
+          # Return decimalyear of OBSSTART
+          with pyfits.open(self.evt_filename) as ff:
+              x = ff[0].header["DATE-END"]
+              return Time(str(x), format='isot')
+
+
+      return None
         
   def regions4coordinates(self, coord, src_radius=15, bkg_radius=35, write=True, source_name="src"):
    """
@@ -86,11 +102,6 @@ class Exposure():
        ll.info("Writing bkg region to "+ofn)    
        bkg3_px = bkg3.to_pixel(wcs)
        fits_region_file_writer(bkg3_px, ofn, overwrite=True)
-       
-           
-   #regions = Regions([src, bkg1, bkg2, bkg3])
-            #regions.write("tmp.reg", overwrite=True)
-   
    
    return dct
     
@@ -131,59 +142,9 @@ class Exposure():
         bkg = bkg[0]
     
     return src, bkg
-  
-  #def script_filename(self, which):
-    #if which not in ["spec","lc"]:
-        #raise BaseException("Exposure::scipt_filename called with unknown option (%s)." % which)
-        
-    #dd = self.config.getint('SCRIPTS', 'direcotry') if self.config.has_option('SCRIPTS', 'direcotry') else None
-    #if dd == None:
-        #odir = self.config["FILES"]["basedir"]+"/"+self.config["FILES"]["data_subdir"]+"/"
-    #else:
-        #odir = self.config["SCRIPTS"]["directory"]+"/"
-        
-    #ofn = odir+self.det+self.config["SCRIPTS"][which]
-    #return ofn  
-  
-  #def lc_shell_script(self, binning=None):
-    ##eLo, eHi = int(self.config["ENERGIES"]["lo"]), int(self.config["ENERGIES"]["hi"])
-    #idir = self.config["FILES"]["basedir"]
-    #elo, ehi = float(self.config["ENERGIES"]["lo"]), float(self.config["ENERGIES"]["hi"])
-    #if binning is None: binning = float(self.config["TIMING"]["binning"])
-    #ll = logging.getLogger()
-    #ll.debug(80*"=")
-    #ll.info("lc shell script for exp_id=%s (%s)" % (self.exp_id, self.det))
 
-    
-    #ofn = self.script_filename(which='lc')
-    #src, bkg = self.regions()
-    #lcf = xss.gen_new_lc_file(src, bkg, binning=binning, lo=elo, hi=ehi, ofn = ofn)
-    #return ofn, lcf
-
-  #def spec_shell_script(self):
-    #idir = self.config["FILES"]["basedir"]
-    #det = self.det
-    #binning = int(self.config["SPECTRA"]["binning"])
-    #ll = logging.getLogger()
-    #ll.debug(80*"=")
-    #ll.info("spec shell script for exp_id=%s (%s)" % (self.exp_id, det))
-
-    #ofn = self.script_filename("spec")    
-    #src, bkg = self.regions()
-    #filtered = bool(self.config["SPECTRA"]["filtered"])
-    #if filtered:
-        #evt = os.path.relpath(self.filtered_evt_filename, os.path.dirname(ofn))
-    #else:
-        #evt = os.path.relpath(self.evt_filename, os.path.dirname(ofn))
-    #ll.debug("Using evt-file \'%s\'" % evt)
-    #sfile = xss.gen_new_spec_file(src, bkg, ofn=ofn, instr=det, binning=binning, verbose=1, evt_file=evt)
-    #ll.info("Generated: \'%s\'." % ofn)  
-    #return ofn, sfile 
-        
-    def gen_shell_scripts(self):
-        #pass
-        f0 = self.spec_shell_script()
-        f1 = self.lc_shell_script()
+    #def gen_shell_scripts(self):
+        #f0 = self.spec_shell_script()
+        #f1 = self.lc_shell_script()
             
-        #ll.info("shell scripts: ", f0, f1)
-        return (f0, f1)
+        #return (f0, f1)

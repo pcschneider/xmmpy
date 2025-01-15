@@ -125,7 +125,7 @@ def fits_single_region_writer(line, ofn, overwrite=True, verbose=1):
 
 def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=True):
     """
-    Write a \'line\' as a fits file
+    Write \'lines\' as a fits file
     """
     import re
     p = re.compile('([a-z]*\()')

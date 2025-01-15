@@ -28,7 +28,7 @@ fi
 echo "obsID='${obsID}' source='${source}' directory='${directory}'"
 
 if [ ! -d "$directory" ]; then
-  echo "$directory does exist, aborting."
+  echo "$directory does not exist, aborting."
   exit 1
 fi
 

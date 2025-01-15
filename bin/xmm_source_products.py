@@ -80,7 +80,7 @@ def scripts_from_directory(directory, source=None, tmp=None, products=None):
     return r
     
 
-def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None, products=None):
+def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix/hdd/python/bin/python3.8", filename=None, products=None, dry=False):
     """
       Generate script that downloads and processes a particular obsID
     """
@@ -108,6 +108,7 @@ def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix
     ret+="rm "+tmp.name+"\n"
     ret+="log_fn=${fn%.sh}.log\n"
     ret+="echo \"Running ${fn} with log-file ${log_fn}\"\n"
+    if dry: ret+="#"
     ret+=". $fn 2>&1 | tee  $log_fn \n"
     if filename is not None:
         with open(filename,"w") as oo:
@@ -139,7 +140,8 @@ if __name__ == "__main__":
     # spec=None, lc=None, evt=None, rgs=None
     parser.add_argument('-p', '--products', default=None, nargs='*', help="Optionally select specific data product(s); select 1+ from: "+str(possible_data_products)+".\nOverrides source product processing steps from config-file, i.e., only selected data products will be generated.")#, formatter_class=RawTextHelpFormatter)
 
+    parser.add_argument('-d', '--dry', default=False, action='store_true', help="You can call the script to generate the scripts, but they will  _not_ be run.")
     args = parser.parse_args()
     
-    print(scripts(directory=args.directory,source=args.source, config=args.config, filename=args.script, products=args.products))
+    print(scripts(directory=args.directory,source=args.source, config=args.config, filename=args.script, products=args.products, dry=args.dry))
     

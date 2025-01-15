@@ -1,4 +1,4 @@
-.. xmmpy documentation master file, created by
+ .. xmmpy documentation master file, created by
    sphinx-quickstart on Thu Dec  8 16:33:39 2022.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -38,7 +38,8 @@ Example 2 (starting from 01234567.tar.gz)
 
 Assuming that you have downloaded an odf (e.g. 01234567.tar.gz), you can run::
 
-  xmm_process2products.py 01234567.tar.gz "GJ436" XMM/
+  heainit ; sasinit
+  xmm_process2products.sh 01234567.tar.gz "GJ436" XMM/
   
 with the target name being ``GJ435`` and the directory being ``XMM``. The obsID in the above example would be '01234567' with the data being stored in
 ``XMM/01234567``.
@@ -94,71 +95,18 @@ Generate source products::
 
   xmm_source_products.py 0892000501/ 'TOI-776'
 
+or for a specific config-file::
+
+  xmm_source_products.py --config=0892000501/toi_776.config 'TOI-776'
+  
   
 High level scripts
-----------------------
+===================
+.. toctree::
+   :maxdepth: 2
+   
+   hl_description
 
-The following scripts can be used to process data:
-
-**xmm_retrieve**
-
-Download data from the XMM-Newton archive and performs the first reduction steps. If run as::
-
-  xmm_retrieve.py obsID directory --script=xt.sh
-
-it generates a script (``xt.sh``), which can be sourced to download the data and to run the script::
-
-  directory/reduce_odf_{obsID}.sh
-  
-which itself calls::
-
-  directory/make_xmm.sh    # <- copy of the general reduction script
-  directory/{obsID}/sas_{obsID}.sh   # <- usual file to set SAS_ODF etc.
-
-to generate::
-
-  directory/{obsID}/odata # with the event-files and images
-
-and the conf-file::
-
-  directory/{obsID}/xmmpy0109060301.conf # standard conf-file
-  
-as well as the log-files::
-
-  directory/reduce_odf_{obsID}.log
-  
-and log-files for some SAS-tasks::
-
-  directory/{obsID}/cifbuild.log
-  directory/{obsID}/odfingest.log
-  directory/{obsID}/emproc.log
-  directory/{obsID}/epproc.log
-  
-Essentially, the script downloads the data and runs ``make_xmm.sh``.
-
-(Requires SAS and partially runs in bash.)
-
-**xmm_source_regions**
-
-Generates source and background regions. Run as::
-
-  xmm_source_regions.py directory/{obsID} "source name"  --script=xr.sh
-  
-The source and background regions will be::
-
-  directory/{obsID}/odata/*reg*.fits
-
-The script looks up the source in Simbad, propagates the sky position to the observation date and generates *one* source region (``*_reg_src.fits``) as well as individual background regions for pn, m1, and m2 (``*_reg_bkg_{det}.fits``). Source regions are circles. 
-
-Log-file: ``xmmpy.log``
-
-.. note::
-
-  While this script requires a directory as input, it really uses the xmmpy{obsID}.conf-file to find files.
-  
-**xmm_source_products**
-
-**xmm_full_process**
 
 Some Helper Functions
 =====================

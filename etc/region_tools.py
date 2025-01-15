@@ -61,6 +61,8 @@ def correct_region_format_to_fits(cnf, verbose=10):
     def check_one_region(fn):
         if verbose>1: print("Checking ",fn)
         fn = os.path.abspath((os.path.expanduser(fn)))
+        if not os.path.exists(fn):
+            return None
         try:
             ff = pyfits.open(fn)
             ff.close()

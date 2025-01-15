@@ -44,6 +44,7 @@ SPECTRA:
   script_m2 : spec_ana_m2.sh
   script : spec_ana.sh
   use_filtered : FALSE
+  time_bins : None
 
 EVENTS:
   script: event_ana.sh

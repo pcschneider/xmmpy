@@ -43,9 +43,9 @@ def lc_script(exp):
         lo, hi = band.split(":")
         e_expression = str(lo)+"-"+str(hi)+"eV"
         evt_file = str(path4(exp.config, d+"_evt"+filt))
-        src_lc_file = str(path4(exp.config, d+"_src_lc", energy_range=e_expression))
-        bkg_lc_file = str(path4(exp.config, d+"_bkg_lc", energy_range=e_expression))
-        crr_lc_file = str(path4(exp.config, d+"_crr_lc", energy_range=e_expression))
+        src_lc_file = str(path4(exp.config, d+"_src_lc", postfix=e_expression))
+        bkg_lc_file = str(path4(exp.config, d+"_bkg_lc", postfix=e_expression))
+        crr_lc_file = str(path4(exp.config, d+"_crr_lc", postfix=e_expression))
         
         
         src_reg = str(path4(exp.config, "src_reg"))

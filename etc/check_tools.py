@@ -52,6 +52,7 @@ class Surrounding():
         else:
             raise Exception("No detector found in "+str(self.conf_fn)+" to use for getting source list.")
         src_reg_fn = path4(self.conf,"src_reg")
+        print("XXX", src_reg_fn, str(self.evt_fn))
         ra_src, dec_src = source_center(src_reg_fn, wcs_ref_file=str(self.evt_fn))
         self.source_px, self.source_py = source_center(src_reg_fn)
         

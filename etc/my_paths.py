@@ -4,17 +4,23 @@ import os
 from .my_configs import conffile_reader
 
 
-def path4(config, which="datadir", energy_range=None):
-    tmp = path4_ll(config, which=which, energy_range=energy_range)
+def path4(config, which="datadir",postfix=None):
+    tmp = path4_ll(config, which=which, postfix=postfix)
     if str(tmp).lower().strip()=="none": return None
     return Path(os.path.expanduser(str(tmp)) )
 
 @conffile_reader()
-def path4_ll(config, which="datadir", energy_range=None):
+def path4_ll(config, which="datadir", postfix=None):
     """
+    Parameters
+    -----------
+    config : str or dict (config-instance)
+    which : str
+    postfix : str
+      
     """
+    
     which = which.lower()
-    #print("which=",which)
     if which == "datadir":
             return Path(config["DATA"]["basedir"]).joinpath(config["obsID"])
     elif which == "odata":
@@ -69,59 +75,109 @@ def path4_ll(config, which="datadir", energy_range=None):
         if p2 is None: return None
         return p1.joinpath(p2)
 
-# SPECTRA   
-    elif which == "pn_src_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_src_spec_prefix"]+".fits")
-        #return path4(config, which="datadir").joinpath(config["DATA"]["specreldir"], config["FILENAMES"]["pn_src_spec_prefix"]+".fits")
-    elif which == "m1_src_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_src_spec_prefix"]+".fits")
-    elif which == "m2_src_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_src_spec_prefix"]+".fits")
-    
-    elif which == "pn_bkg_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_bkg_spec_prefix"]+".fits")
-    elif which == "m1_bkg_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_bkg_spec_prefix"]+".fits")
-    elif which == "m2_bkg_spec_file":
-        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_bkg_spec_prefix"]+".fits")
-    
-    elif which == "pn_rmf":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_rmf_spec_prefix"]+".fits")
-    elif which == "m1_rmf":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_rmf_spec_prefix"]+".fits")
-    elif which == "m2_rmf":
-          return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_rmf_spec_prefix"]+".fits")
-   
-    elif which == "pn_arf":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_arf_spec_prefix"]+".fits")
-    elif which == "m1_arf":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_arf_spec_prefix"]+".fits")
-    elif which == "m2_arf":
-          return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_arf_spec_prefix"]+".fits")
-   
-    elif which == "pn_bin":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_bin_spec_prefix"]+".fits")
-    elif which == "m1_bin":
-         return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_bin_spec_prefix"]+".fits")
-    elif which == "m2_bin":
-          return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_bin_spec_prefix"]+".fits")
 
+# LIGHT CURVES   
+    elif which == "pn_src_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m1_src_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m2_src_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+        
+    elif which == "pn_bkg_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m1_bkg_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m2_bkg_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "pn_crr_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m1_crr_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+    elif which == "m2_crr_lc":
+        if postfix is None:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
+        else:
+            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+postfix+".fits")
+
+    # SPECTRA   
+    if postfix is None: postfix=""
+    if which == "pn_src_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_src_spec_prefix"]+postfix+".fits")
+        #return path4(config, which="datadir").joinpath(config["DATA"]["specreldir"], config["FILENAMES"]["pn_src_spec_prefix"]+".fits")
+    if which == "m1_src_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_src_spec_prefix"]+postfix+".fits")
+    if which == "m2_src_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_src_spec_prefix"]+postfix+".fits")
+    
+    if which == "pn_bkg_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_bkg_spec_prefix"]+postfix+".fits")
+    if which == "m1_bkg_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_bkg_spec_prefix"]+postfix+".fits")
+    if which == "m2_bkg_spec_file":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_bkg_spec_prefix"]+postfix+".fits")
+    
+    if which == "pn_rmf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_rmf_spec_prefix"]+postfix+".fits")
+    if which == "m1_rmf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_rmf_spec_prefix"]+postfix+".fits")
+    if which == "m2_rmf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_rmf_spec_prefix"]+postfix+".fits")
+
+    if which == "pn_arf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_arf_spec_prefix"]+postfix+".fits")
+    if which == "m1_arf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_arf_spec_prefix"]+postfix+".fits")
+    if which == "m2_arf":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_arf_spec_prefix"]+postfix+".fits")
+
+    if which == "pn_bin":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["pn_bin_spec_prefix"]+postfix+".fits")
+    if which == "m1_bin":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m1_bin_spec_prefix"]+postfix+".fits")
+    if which == "m2_bin":
+        return path4(config, which="specdir").joinpath(config["FILENAMES"]["m2_bin_spec_prefix"]+postfix+".fits")
+    
 # EVENTS
-    elif which == "pn_src_evt_file":
+    if which == "pn_src_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_pn.fits")
-    elif which == "m1_src_evt_file":
+    if which == "m1_src_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_m1.fits")
-    elif which == "m2_src_evt_file":
+    if which == "m2_src_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["src_evt_prefix"]+"_m2.fits")
-    elif which == "pn_bkg_evt_file":
+    if which == "pn_bkg_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_pn.fits")
-    elif which == "m1_bkg_evt_file":
+    if which == "m1_bkg_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m1.fits")
-    elif which == "m2_bkg_evt_file":
+    if which == "m2_bkg_evt_file":
         return path4(config, which="evtdir").joinpath(config["FILENAMES"]["bkg_evt_prefix"]+"_m2.fits")
     
 # EXPOSURE MAP
-    elif which == "pn_expmap":
+    if which == "pn_expmap":
         odata = str(path4(config, which="odata"))
         print(odata)
         dd = odata+"/*EPN*ImagingEvt_expmap.ds"
@@ -132,7 +188,7 @@ def path4_ll(config, which="datadir", energy_range=None):
             raise Exception("No exposure map for pn found (",dd,")")
         else:
             raise Exception("More than one exposure map found for pn (",dd,")")
-    elif which == "m1_expmap":
+    if which == "m1_expmap":
         dd = str(path4(config, which="odata"))+"/*EMOS1*ImagingEvt_expmap.ds"
         fname = glob.glob(dd)
         if len(fname)==1:
@@ -141,7 +197,7 @@ def path4_ll(config, which="datadir", energy_range=None):
             raise Exception("No exposure map for m1 found (",dd,")")
         else:
             raise Exception("More than one exposure map found for m1 (",dd,")")
-    elif which == "m2_expmap":
+    if which == "m2_expmap":
         dd = str(path4(config, which="odata"))+"/*EMOS2*ImagingEvt_expmap.ds"
         fname = glob.glob(dd)
         if len(fname)==1:
@@ -151,112 +207,61 @@ def path4_ll(config, which="datadir", energy_range=None):
         else:
             raise Exception("More than one exposure map found for m2 (",dd,")")
 
-    
-
-# LIGHT CURVES   
-    elif which == "pn_src_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m1_src_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m2_src_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_src_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-        
-    elif which == "pn_bkg_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m1_bkg_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m2_bkg_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_bkg_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-        
-    elif which == "pn_crr_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["pn_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m1_crr_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m1_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    elif which == "m2_crr_lc":
-        if energy_range is None:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s.fits")
-        else:
-            return path4(config, which="lcdir").joinpath(config["FILENAMES"]["m2_crr_lc_prefix"]+"_"+str(config["LIGHT CURVES"]["binning"])+"s_"+energy_range+".fits")
-    
-    elif which == "odf_file":
+    if which == "odf_file":
         #if obsid == None: raise Exception("Need an observation for which='odf_file'")
         return Path(config["DATA"]["basedir"]).joinpath(config["obsID"]+".tar.gz")
-    elif which == "odf_reduction_script_fn":
+    if which == "odf_reduction_script_fn":
         #if obsid == None: raise Exception("Need an observation for which='odf_reduction_script_fn'")
         return Path(config["DATA"]["basedir"]).joinpath(config["FILENAMES"]["odf_reduction_fn"]+config["obsID"]+".sh")
-    elif which == "sas_init_script":
+    if which == "sas_init_script":
         return path4(config, which="datadir").joinpath(config["XMM"]["SAS_init_script"])
 
-    elif which == "conf-file":
+    if which == "conf-file":
         return path4(config, which='datadir').joinpath(config["obsID"]).joinpath("xmmpy.conf")
     
 # SCRIPTS
 
-    elif which == "pn_spec_script":
+    if which == "pn_spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script_pn"])
-    elif which == "m1_spec_script":
+    if which == "m1_spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script_m1"])
-    elif which == "m2_spec_script":
+    if which == "m2_spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script_m2"])
-    elif which == "spec_script":
+    if which == "spec_script":
         return path4(config, which="datadir").joinpath(config["SPECTRA"]["script"])
 
     
-    elif which == "pn_event_script":
+    if which == "pn_event_script":
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script_pn"])
-    elif which == "m1_event_script":
+    if which == "m1_event_script":
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script_m1"])
-    elif which == "m2_event_script":
+    if which == "m2_event_script":
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script_m2"])
-    elif which == "event_script":
+    if which == "event_script":
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script"])
     
     
-    elif which == "pn_lc_script":
+    if which == "pn_lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script_pn"])
-    elif which == "m1_lc_script":
+    if which == "m1_lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script_m1"])
-    elif which == "m2_lc_script":
+    if which == "m2_lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script_m2"])
-    elif which == "lc_script":
+    if which == "lc_script":
         return path4(config, which="datadir").joinpath(config["LIGHT CURVES"]["script"])
     
-    elif which == "rgs_script":
+    if which == "rgs_script":
         return path4(config, which="datadir").joinpath(config["RGS"]["script"])
 
-    elif which == "ana_script":
+    if which == "ana_script":
         return path4(config, which="datadir").joinpath(config["FILENAMES"]["ana_script"])
     
     #elif which == "src_reg":
         ##if obsid == None: raise Exception("Need an observation for which='src_reg'")
         #if src == None: raise Exception("Need a source name for which='src_reg'")
         #return path4(config, which="datadir", obsid=obsid).joinpath(config["Sources"][src][obsid]["src_reg"])
-    elif True:
-        return None
+    
+    return None
 
 
 

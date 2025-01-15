@@ -6,6 +6,7 @@ import copy
 #from configparser import ExtendedInterpolation
 import logging
 import astropy.io.fits as pyfits
+import astropy.units as aunits
 import xmmpy.obstools.xmm_exp as xe
 from xmmpy.etc import read_config, addFileHandler, setup_logging, default_config, ofn_support, update_source_in_config, cnf_support
 #from xmmpy.etc import shell_scripts as xmm_scripts
@@ -230,6 +231,7 @@ class Obs():
         ll = logging.getLogger("xmmpy")
         #ll.debug(80*"=")
         ll.info("Populating exposures:")
+        start_times, stop_times = {}, {}
         cnt = 0
         for det in detectors:
             filename = path4(self.config, det+"_evt")
@@ -244,15 +246,25 @@ class Obs():
                         nexpid = str(ii).zfill(len(exp.exp_id))
                         exp.exp_id = nexpid
                 self.exposures[exp.exp_id] = exp
-                
+                start_times[exp.exp_id] = exp["start"]
+                stop_times[exp.exp_id] = exp["stop"]
+                #print("XXX", exp.exp_id, start_times)
                 cnt+=1
                 ll.info("        with EXP_ID=%s" % exp.exp_id)
                  
             except Exception as EE:
                 ll.info(str(EE))
+        min_start = None
+        max_stop = None
+        for k in start_times:
+            if min_start is None or min_start > start_times[k]: min_start = start_times[k]
+            if max_stop is None or max_stop < stop_times[k]: max_stop = stop_times[k]
+            
+        self.obs_start_time = min_start
+        self.obs_stop_time = max_stop
         return cnt    
     
-    def gen_spec_shell_scripts(self, sas_init=False):
+    def gen_spec_shell_scripts(self, sas_init=False, margin_sec=1):
         from ..scripttools import spec_script
         r = ""
         if sas_init:
@@ -263,7 +275,39 @@ class Obs():
         for e in self.exposures.values(): 
             ll.info("Generating spectral extraction script for "+str(e))
             ofn = path4(self.config, which = e.det+"_spec_script")
-            x = spec_script(e, ofn = ofn)
+            tmp = ""
+            tb = self.config["SPECTRA"]["time_bins"]
+            if str(tb).lower() != "none" and str(tb)!="":
+                if type(tb) == int:
+                    t0, t1 = self.obs_start_time - margin_sec*aunits.second, self.obs_stop_time + margin_sec*aunits.second
+                    bins = list([[t0+i*(t1-t0)/tb, t0+(i+1)*(t1-t0)/tb] for i in range(tb)])
+                    dt = (t1.cxcsec-t0.cxcsec)/tb/1000
+                    ll.info("Generating "+str(bins)+ " (time) bins for EPIC spectra with "+str("5.2f ks binning." % dt))
+                    for j, bb in enumerate(bins):
+                        xmm_sec0, xmm_sec1 = bb[0].cxcsec, bb[1].cxcsec
+                        pf = str("_%iks_bin%i" % (dt,j))
+                        x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
+                        tmp+=str("echo \"Spectrum bin %i for %4.1fks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.obs_start_time.cxcsec)/1000, (xmm_sec1-self.obs_start_time.cxcsec)/1000, pf))
+                        tmp+=x
+                    print(tmp)
+                    x = tmp
+                elif type(tb) == list:
+                    ll.info(str("Generating EPIC spectra using time intervals from config-file (#%i)." % len(tb)))
+                    for j, bb in enumerate(tb):
+                        xmm_sec0 = self.obs_start_time.cxcsec + bb[0]*1000.
+                        xmm_sec1 = self.obs_start_time.cxcsec + bb[1]*1000.
+                        if float(bb[0]).is_integer() and float(bb[1]).is_integer():
+                            pf = str("_%i_%iks" % (bb[0], bb[1]))
+                        else:
+                            pf = str("_%.1f-%.1fks" % (bb[0], bb[1]))
+                        ll.info("Generating EPIC spectrum "+str(j)+" for "+str(bb)+str(" or %.3f, %.3f sec)" % (xmm_sec0, xmm_sec1)))
+                        print(pf, xmm_sec0, xmm_sec1)
+                        x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
+                        tmp+=str("echo \"Spectrum bin %i from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, (xmm_sec0-self.obs_start_time.cxcsec)/1000, (xmm_sec1-self.obs_start_time.cxcsec)/1000, pf))
+                        tmp+=x
+                    x = tmp
+            else:
+                x = spec_script(e, ofn = ofn)
             r+=x
         ofn = path4(self.config, which = "spec_script")
         ll.info("Writing spec script to "+str(ofn))
