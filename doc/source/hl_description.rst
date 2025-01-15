@@ -95,7 +95,7 @@ You can also adjust the desired source products, e.g., light curves only as in t
 
   xmm_source_products.py --config=./RU_Lup_0882060501.conf --p=lc --script="new_specs.sh"
   
-The optional source products are "rgs","spec","lc", "evt".
+The optional source products are "rgs","spec","lc", "evt", "img".
   
 
 xmm_full_process

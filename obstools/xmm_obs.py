@@ -265,6 +265,9 @@ class Obs():
         return cnt    
     
     def gen_spec_shell_scripts(self, sas_init=False, margin_sec=1):
+        """
+        Generate SAS shell script for spectra
+        """
         from ..scripttools import spec_script
         r = ""
         if sas_init:
@@ -316,6 +319,9 @@ class Obs():
         return r
     
     def gen_lc_shell_scripts(self, sas_init=False):
+        """
+        Generate SAS shell-script for light curves
+        """
         from ..scripttools import lc_script
         ll = logging.getLogger("xmmpy")
         r = ""
@@ -334,7 +340,30 @@ class Obs():
             oo.write(r)
         return r
     
-    def gen_rgs_shell_scripts(self ,sas_init=False, rgsproc_extra_args=None):
+    def gen_img_shell_scripts(self, sas_init=False):
+        """
+        Generate SAS shell script for images
+        """
+        from ..scripttools import img_script
+        ll = logging.getLogger("xmmpy")
+        r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
+    
+        for e in self.exposures.values():
+            ll.info("Generating image creation script for "+str(e))
+            ofn = path4(self.config, which = e.det+"_image_script")
+            x = img_script(e, ofn=ofn)
+            r+=x
+        ofn = path4(self.config, which = "image_script")
+        ll.info("Writing image script to "+str(ofn))
+        with open(ofn, "w") as oo:
+            oo.write(r)
+        return r    
+    
+    
+    def gen_rgs_shell_scripts(self, sas_init=False, rgsproc_extra_args=None):
         """
         Generate script to extract RGS spectrum
 
@@ -385,7 +414,7 @@ class Obs():
         
         
     @ofn_support    
-    def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, sas_init=True):
+    def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, img=None, sas_init=True):
         """
         Generate shell scripts for spectra (if True) and light curves (if lc==True)
         """
@@ -396,9 +425,11 @@ class Obs():
         if evt is None:
             evt = self.config["SOURCE PRODUCTS"]["events"]
         if rgs is None:
-            rgs = self.config["SOURCE PRODUCTS"]["events"]            
+            rgs = self.config["SOURCE PRODUCTS"]["events"]
+        if img is None:
+            img = self.config["SOURCE PRODUCTS"]["images"]
         ll = logging.getLogger("xmmpy")
-        ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+").")
+        ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+", rgs="+str(rgs)+", images="+str(img)+").")
         r = "# xmmpy ana script\n\n"
         
         if sas_init:
@@ -413,6 +444,8 @@ class Obs():
             r+=self.gen_evt_shell_scripts()
         if rgs:
             r+=self.gen_rgs_shell_scripts()
+        if img:
+            r+=self.gen_img_shell_scripts()
         return r
     
         

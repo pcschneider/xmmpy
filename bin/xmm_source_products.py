@@ -6,7 +6,7 @@ import os
 from difflib import SequenceMatcher
 import tempfile
 
-possible_data_products = ["rgs","spec","lc", "evt"]
+possible_data_products = ["rgs","spec","lc", "evt", "img"]
 
 def scripts_from_config(config, tmp=None, products=None):
     r = "import logging\nfrom xmmpy.etc import default_config, read_config, path4\nfrom xmmpy import Obs\n\n"

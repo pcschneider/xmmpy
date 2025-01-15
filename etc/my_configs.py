@@ -17,6 +17,7 @@ DATA:
   lcreldir : "lcs"
   evtreldir : "evts"
   rgsreldir : "rgs"
+  imgreldir : "images"
   detectors : ['pn', 'm1', 'm2']
   source_name : None
   
@@ -55,12 +56,24 @@ EVENTS:
 RGS:
   script : RGS_ana.sh
   gti : FALSE
+  
+IMAGES:
+  energies : [300:1000]
+  binning_type : imageSize
+  x_size : 600
+  y_size : 600
+  script_pn : image_ana_pn.sh
+  script_m1 : image_ana_m1.sh
+  script_m2 : image_ana_m2.sh
+  script : image_ana.sh
+  use_filtered : FALSE
 
 SOURCE PRODUCTS:
   spectra : TRUE
   light curves : TRUE
   events : TRUE
   rgs : TRUE
+  images : True
   
 REGIONS:
     src : reg_src.fits 
@@ -105,6 +118,10 @@ FILENAMES:
     pn_crr_lc_prefix : "lc_crr_pn"
     m1_crr_lc_prefix : "lc_crr_m1"
     m2_crr_lc_prefix : "lc_crr_m2"
+    
+    pn_image_prefix : "img_pn"
+    m1_image_prefix : "img_m1"
+    m2_image_prefix : "img_m2"
     
     ana_script : ana.sh
     
@@ -271,6 +288,7 @@ def update_source_in_config(config, source):
         if sect == "SPECTRA": osect = "spec"
         elif sect == "LIGHT CURVES": osect = "lc"
         elif sect == "EVENTS": osect = "event"
+        elif sect == "IMAGES": osect = "image"
         else: raise Exception("Only SPECTRA, LIGHT CURVES, and EVENTS allowed as sections names.")
         scrpt_new =  str(scrpt_old.parent.joinpath(src_on+"_"+osect+"_script_"+typ+".sh"))
         config[sect]["script_"+typ] = scrpt_new
@@ -307,6 +325,7 @@ def update_source_in_config(config, source):
         update_script_name(det, "SPECTRA")
         update_script_name(det, "LIGHT CURVES")
         update_script_name(det, "EVENTS")
+        update_script_name(det, "IMAGES")
 
         update_source_product_names(det, "spec_prefix")
         update_source_product_names(det, "lc_prefix")
@@ -315,7 +334,8 @@ def update_source_in_config(config, source):
     update_key_value(config["FILENAMES"], "bkg_evt_prefix", src_on+"_evt_bkg")    
     update_key_value(config["FILENAMES"], "ana_script", src_on+"_EPIC_ana.sh")   
     update_key_value(config["SPECTRA"], "script", src_on+"_spec_ana.sh")   
-    update_key_value(config["LIGHT CURVES"], "script", src_on+"_lc_ana.sh")   
+    update_key_value(config["LIGHT CURVES"], "script", src_on+"_lc_ana.sh")
+    update_key_value(config["IMAGES"], "script", src_on+"_img_ana.sh")   
     update_key_value(config["EVENTS"], "script", src_on+"_evt_ana.sh")   
 
 

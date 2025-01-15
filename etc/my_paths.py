@@ -33,6 +33,9 @@ def path4_ll(config, which="datadir", postfix=None):
         return path4(config,"datadir").joinpath(config["DATA"]["evtreldir"])
     elif which == "rgsdir":
         return path4(config,"datadir").joinpath(config["DATA"]["rgsreldir"])
+    elif which == "imgdir":
+        return path4(config,"datadir").joinpath(config["DATA"]["imgreldir"])
+    
     
     elif which == "pn_evt":
         return path4(config, which="datadir").joinpath("odata", config["FILENAMES"]["pn_evt_file"])
@@ -76,6 +79,24 @@ def path4_ll(config, which="datadir", postfix=None):
         return p1.joinpath(p2)
 
 
+# IMAGES
+    elif which == "pn_image":
+        if postfix is None:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["pn_image_prefix"]+".fits")
+        else:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["pn_image_prefix"]+"_"+postfix+".fits")
+    elif which == "m1_image":
+        if postfix is None:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["m1_image_prefix"]+".fits")
+        else:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["m1_image_prefix"]+"_"+postfix+".fits")
+    elif which == "m2_image":
+        if postfix is None:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["m2_image_prefix"]+".fits")
+        else:
+            return path4(config, which="imgdir").joinpath(config["FILENAMES"]["m2_image_prefix"]+"_"+postfix+".fits")
+
+        
 # LIGHT CURVES   
     elif which == "pn_src_lc":
         if postfix is None:
@@ -239,6 +260,16 @@ def path4_ll(config, which="datadir", postfix=None):
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script_m2"])
     if which == "event_script":
         return path4(config, which="datadir").joinpath(config["EVENTS"]["script"])
+    
+        
+    if which == "pn_image_script":
+        return path4(config, which="datadir").joinpath(config["IMAGES"]["script_pn"])
+    if which == "m1_image_script":
+        return path4(config, which="datadir").joinpath(config["IMAGES"]["script_m1"])
+    if which == "m2_image_script":
+        return path4(config, which="datadir").joinpath(config["IMAGES"]["script_m2"])
+    if which == "image_script":
+        return path4(config, which="datadir").joinpath(config["IMAGES"]["script"])
     
     
     if which == "pn_lc_script":
