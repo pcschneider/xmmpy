@@ -99,6 +99,10 @@ or for a specific config-file::
 
   xmm_source_products.py --config=0892000501/toi_776.config 'TOI-776'
   
+To check the regions, use::
+
+  p38 ~/hdd/tools/xmmpy/bin/xmm_image_pdf.py CONFFILE
+  
   
 High level scripts
 ===================

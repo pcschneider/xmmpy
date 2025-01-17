@@ -287,6 +287,9 @@ def path4_ll(config, which="datadir", postfix=None):
     if which == "ana_script":
         return path4(config, which="datadir").joinpath(config["FILENAMES"]["ana_script"])
     
+    if which == "image_pdf":
+        return path4(config, which="imgdir").joinpath("overview.pdf")
+    
     #elif which == "src_reg":
         ##if obsid == None: raise Exception("Need an observation for which='src_reg'")
         #if src == None: raise Exception("Need a source name for which='src_reg'")

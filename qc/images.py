@@ -2,6 +2,7 @@ from regions import Regions, CirclePixelRegion, Region
 from astropy.io import fits as pyfits
 import matplotlib.pyplot as plt
 from astropy.wcs import WCS
+import astropy.units as uu
 from matplotlib.patches import Circle
 from matplotlib.colors import LogNorm
 import matplotlib
@@ -15,7 +16,7 @@ from matplotlib.pyplot import cm
 from ..etc import read_config, path4, Surrounding
 
 
-def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5, idx=1, single_ax=False, fig=None):
+def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5, idx=1, single_ax=False, fig=None, verbose=1):
     """
     Parameters
     ----------
@@ -82,23 +83,59 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
         tlim1 = (sx-r_scaling*sr, sy-r_scaling*sr)
         tlim2 = (sx+r_scaling*sr, sy+r_scaling*sr)        
 
-    ll = ax.get_xticks()[::3]
+    #ll = ax.get_xticks()[::3]
     # print(ll)
     # nllx = [str("%i" % (x-ll[len(ll)//2])) for x in ll[::3]]
     # print("x ll",ll, ll[len(ll)//2], nllx)
-    ax.set_xticks(ll, [str("%i" % x) for x in ll])#, nllx)
+    #ax.set_xticks(ll, [str("%i" % x) for x in ll])#, nllx)
 
     ttx = ax.get_transform("world")
     cc0 = ttx.transform(tlim1)
     cc0 = ax.transData.inverted().transform(cc0)
     cc1 = ttx.transform(tlim2)
     cc1 = ax.transData.inverted().transform(cc1)
+    # ax.annotate(ff[0].header["Filter"], xy=(0.2, 0.2), color='white', xycoords="axes fraction")
+    #print("cc",cc0,cc1)
+    ax2 = plt.gca()
+    #ll = ax2.get_xticks()[::2]
+    #print(ax2.coords)
+    #print(dir(ax2.coords["x"]))
+    ##print("XXX",ax2.coords["x"].get_format_unit())
+    #ax2.coords["x"].set_ticks(values=uu.Quantity([27000, 29000]))
+    tmp = ax2.coords["x"].transform
+    #print("YYY", tmp, type(tmp))
+    #print(tmp.inverted().transform(np.atleast_2d(np.array((300,300)))))
+    ul = tmp.transform(np.atleast_2d(np.array(cc0)))[0]
+    lr = tmp.transform(np.atleast_2d(np.array(cc1)))[0]
+    #print("ul, lr", ul, lr)
+    aa, bb = ul[0], lr[0]
+    steps =np.linspace(np.ceil(aa/1000), np.floor(bb/1000),4).astype(int) * 1000
+    tmp = uu.Quantity([ul[0], lr[0]])
+    tmp = uu.Quantity(steps)
+    #print(tmp, type(tmp))
+    ax2.coords["x"].set_ticks(values=tmp)
+    
+    #print("ll1",ll)
+    #ax.set_xticks([1,2,3], 3*["A"])#, rotation='vertical')
+    #ax2.set_xticks(ll, [str("%i" % x) for x in ll])#, nllx)
+
+
     ax.set_xlim(cc0[0], cc1[0])
     ax.set_ylim(cc0[1], cc1[1])
-    # ax.annotate(ff[0].header["Filter"], xy=(0.2, 0.2), color='white', xycoords="axes fraction")
+    #print("cc",cc0[0], cc1[0])
+    ax2 = plt.gca()
+    ll = ax2.get_xticks()[::2]
+    #print("ll2",ll)
+ 
+    #xt = ax.get_yticklabels()
+    #print("xt: ",xt)
+    #xt[1] = "A"
+    #ax.set_xticklabels(xt)
+    
     ax.set_xlabel("x (physical)")
     ax.set_ylabel("y (physical)")
     ax.legend()
+    #print(5*"XXXXXX")
     return ax
 
 
