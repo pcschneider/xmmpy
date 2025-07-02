@@ -56,7 +56,14 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
                     x = l.strip()[7:-1]
                     # print("x",x)
                     a,b,c = x.split(",")
-                    a,b,c = float(a), float(b), float(c)
+                    a,b = float(a), float(b)
+                    if "\"" in c:
+                        c = float(c[:-1])/3600
+                    elif "\'" in c:
+                        c = float(c[:-1])/60
+                    else:
+                        c = float(c)
+                    print("c",c)
                     # print(a,b,c)
                     #Regions.PixRegion
                     regions = [CirclePixelRegion(PixCoord(x=a, y=b), radius=c)]

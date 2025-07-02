@@ -16,7 +16,7 @@ from matplotlib.pyplot import cm
 from ..etc import read_config, path4, Surrounding
 
 
-def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5, idx=1, single_ax=False, fig=None, verbose=1):
+def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling=5, idx=1, single_ax=False, subplot_arg=(1,1,1), fig=None, verbose=1):
     """
     Parameters
     ----------
@@ -39,15 +39,18 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
                 raise Exception("Only circles allowed at the moment.")
         return x,y,r, pth
 
+
+    
     ff = pyfits.open(image_fn)
     wcs = WCS(ff[0].header, key="L")
+
     if fig is not None:
         #print("Using fig")
         if single_ax:
             idx = 1
             ax = fig.add_subplot(1,1, idx, projection=wcs)
         else:
-            ax = fig.add_subplot(2,2, idx, projection=wcs)
+            ax = fig.add_subplot(*subplot_arg, projection=wcs)
         
     else:    
         if single_ax:
@@ -55,6 +58,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
             ax = plt.subplot(1,1, idx, projection=wcs)
         else:
             ax = plt.subplot(2,2, idx, projection=wcs)
+
             
     mcmap = copy.copy(matplotlib.cm.get_cmap('jet')) 
     mcmap.set_bad((0,0,0))
@@ -258,6 +262,33 @@ def ax4image_and_regions(image_fn, region_fns, r_scaling=2, ax=None):
         plt.xlabel("pix")
         plt.ylabel("pix")
     return ax
+
+
+def ax4lightcurve(lc_fn, fig=None, subplot_arg=(1,1,1), yscale='linear', verbose=1):
+    if fig is None:
+        fig = plt.figure()
+    # lc_fn = str(lc_fn).replace("src", "crr")
+    ff = pyfits.open(lc_fn)
+    ax = fig.add_subplot(*subplot_arg)
+    x, y = ff[1].data["TIME"], ff[1].data["RATE"]
+    yerr = ff[1].data["ERROR"]
+    ymedian = np.median(y)
+    ymean = np.mean(y)
+    print("ymedian", ymedian, " ymean", ymean)
+    ystd = np.std(y)
+    ax.plot((x-min(x))/1e3, len(x)*[ymedian], color='0.5')
+    ax.fill_between((x-min(x))/1e3, len(x)*[ymedian-ystd], len(x)*[ymedian+ystd], color='0.5', alpha=0.1)
+    ax.errorbar((x-min(x))/1e3, y, yerr=yerr, alpha=0.3, color='b')
+    ax.plot((x-min(x))/1e3, y, color='b')
+
+    ax.set_xlabel("Time (ks)")
+    ax.set_ylabel("Rate (cts/s)")
+    ax.set_title(basename(lc_fn))
+    ax.set_yscale(yscale)
+    plt.annotate("Start time: %i" % min(x), xy=(0.02, -0.37), xycoords="axes fraction")
+    plt.annotate("Median: %5.2f, mean: %5.2f (cts/ks)" % (1000* ymedian, 1000* ymean), xy=(0.02, -0.3), xycoords="axes fraction")
+    return ax
+
 
 
 def check_one_config(fn, band="0.5-2.0keV"):

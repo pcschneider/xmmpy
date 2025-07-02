@@ -3,7 +3,7 @@ import sys
 #from os.path import dirname
 sys.path.append("/home/majestix/hdd/python/lib/python3.8/site-packages/")
 import glob
-from xmmpy.qc import ax4image_and_sourceregion
+from xmmpy.qc import ax4image_and_sourceregion, ax4lightcurve
 from xmmpy.etc import path4
 from xmmpy import Obs
 from photutils.aperture import aperture_photometry, SkyCircularAperture
@@ -18,15 +18,14 @@ from astropy.coordinates import SkyCoord
 #from my_filenames import image_file, target_conf, coverage_fn
 from collections import namedtuple
 
-def one_page(obs, band=None, conf_file=None, verbose=10):
-    def one_panel(i, e, band=None):
+def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
+    def one_panel(i, e, fig=None, band=None):
         """
         Plot one detector (or rather exposure)
         """
-        ax0 = plt.subplot(2,2,i+1)
-        x0, y0, wx, wy = ax0.get_position().bounds
-            
-        if verbose>2: print("bbox: ", x0, y0, wx, wy)
+        # ax0 = plt.subplot(2,2,i+1)
+        # x0, y0, wx, wy = ax0.get_position().bounds
+        # if verbose>2: print("ax bbox: ", x0, y0, wx, wy)
             
         #image_fn = "tst.pdf"#image_file(oi, e.det)
         #band = obs.config["IMAGES"]["energies"][0]
@@ -37,18 +36,12 @@ def one_page(obs, band=None, conf_file=None, verbose=10):
         src_reg_fn = path4(obs.config, "src_reg")
         bkg_reg_fn = path4(obs.config, "bkg_"+e.det+"_reg")
 
-        # if str(bkg_reg_fn).lower().strip()=="none":
-        #     bkg_reg_fn=None
-
-        
-
-
         if verbose>2: 
             print("fns ",image_fn, src_reg_fn, bkg_reg_fn, type(bkg_reg_fn))
             print("call arguments: ",e.det,  image_fn, src_reg_fn, bkg_reg_fn)
         # tmp = ax4image_and_sourceregion(image_fn, region_fn = src_reg_fn, bkg_region_fn = [bkg_reg_fn,  str(bkg_reg_fn)[0:-5]+"_new.fits"], idx=i+1)
         if bkg_reg_fn:
-            tmp = ax4image_and_sourceregion(image_fn, region_fn = src_reg_fn, bkg_region_fn = bkg_reg_fn, idx=i+1)
+            tmp = ax4image_and_sourceregion(image_fn, region_fn = src_reg_fn, bkg_region_fn = bkg_reg_fn, subplot_arg=(2,2,i+1), fig=fig)
         else:
             tmp = ax4image_and_sourceregion(image_fn, region_fn = src_reg_fn, idx=i+1)
         axs.append(tmp)
@@ -63,9 +56,10 @@ def one_page(obs, band=None, conf_file=None, verbose=10):
         else:
             if verbose>2: print()   
             
-        axs[i].set_title(str(e.exp_id)+" ("+e.det+")")
+        axs[-1].set_title(str(e.exp_id)+" ("+e.det+")")
         line_temp = str(" ; %15s" % str(e.exp_id))
         dets_temp = "                  %s        " % e.det
+
         with pyfits.open(image_fn) as ff:
             wcs = WCS(ff[0].header)
             wcsL = WCS(ff[0].header, key="L")
@@ -109,33 +103,46 @@ def one_page(obs, band=None, conf_file=None, verbose=10):
         conf_file = cnf_file
     plt_txt_x = 0.52
 
-    print("Using source name=",name)
-    fig = plt.figure()
-    fig.subplots_adjust(bottom=0.2, top=0.95, wspace=0.3, hspace=0.3)
-    axs = []
-        
-    line = name + ""
-    dets = len(name)*" "
-
-    plt.rcParams.update({'font.size': 6})    
+    print("Using source name=\'%s\'"  %name)
     exposures = obs.exposures.values()
-    
+    usable_detectors = obs.config["DATA"]["detectors"]
+    if det not in usable_detectors:
+        return None
     if len(exposures) > 0:
         mp = {obs.exposures[x].det:x for x in obs.exposures}
         # print("mp",mp)
         i,j = 0, 0
-        for d in ["pn", "m1", "m2"]:
-            
+        for d in [det]:
+            i=0
+            fig = plt.figure()
+            fig.subplots_adjust(bottom=0.2, top=0.95, wspace=0.5, hspace=0.5)
+            axs = []
+                
+            line = name + ""
+            dets = len(name)*" "
+
+            plt.rcParams.update({'font.size': 6})    
+            if verbose>2: print("Generating image for detector \'%s\' and energy band \'%s\'" % (d, band))
             if d in mp:
                 e = obs.exposures[mp[d]]
             else:
                 e = namedtuple('exposure', ['det', 'exp_id'])
                 e.det, e.exp_id = d, None
 
-            lt, dt = one_panel(i,e, band) # expID , detector-type
+            lt, dt = one_panel(i, e, band=band, fig=fig) # index, exposure, band, plt.figure
             i+=1
+            print("i:",i)
             line+=lt
             dets+=dt
+            lc_fn = path4(obs.config, e.det+"_crr_lc", postfix=band.replace(":","-")+'eV') # pn_src_lc
+        
+            print("lc_fn",lc_fn)
+            ax4lightcurve(lc_fn, fig=fig, subplot_arg=(2,2,i+1), verbose=verbose)
+            he_lc_fn = path4(obs.config, e.det+"_he_lc")
+            print("he_lc_fn",he_lc_fn, "(",d,")")
+            if he_lc_fn is not None:
+                ax4lightcurve(he_lc_fn, fig=fig, subplot_arg=(2,2,i+2), yscale='log', verbose=verbose)
+            
     else:
         plt.gca().axis('off')
         plt.annotate("no usable exposure", xy=(0.1,0.9), xycoords="figure fraction", size=14)
@@ -151,7 +158,7 @@ def one_page(obs, band=None, conf_file=None, verbose=10):
     if conf_file: plt.annotate(conf_file, xy=(plt_txt_x, 0.425), xycoords="figure fraction", size=6, color='0.5')
     if len(exposures)>0: plt.annotate(line, xy=(plt_txt_x, 0.15), xycoords="figure fraction")
     plt.annotate(dets, xy=(plt_txt_x, 0.13), xycoords="figure fraction", color='0.5')
-
+    return fig
 
 if __name__ == "__main__":
     import argparse    
@@ -183,10 +190,12 @@ if __name__ == "__main__":
 
     with PdfPages(ofn) as pdf:
         for b in obs.config["IMAGES"]["energies"]:
-            one_page(obs, band=b, verbose=verbosity)
-        
-        pdf.savefig()  # saves the current figure into a pdf page
-    plt.close()
+            for d in obs.config["DATA"]["detectors"]:
+                if verbosity>1: print("Generating pdf for energy band: ",b)
+                fig = one_page(obs, band=b, verbose=verbosity, det=d)
+                pdf.savefig(fig)  # saves the current figure into a pdf page
+                plt.close()
+    # plt.close()
     print("\npdf: ",ofn)
     print(" or: ",os.path.relpath(ofn))
 

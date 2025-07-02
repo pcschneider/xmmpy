@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 import os
 
-pcall = "/home/majestix/hdd/python/bin/python3.8"
+pcall = "/home/majestix/hdd/python/bin/python3.12"
 
 def processor(fname, target, pythoncall=pcall, filename=None, verbose=1):
     """

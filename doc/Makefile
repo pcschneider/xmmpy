@@ -4,7 +4,9 @@
 # You can set these variables from the command line, and also
 # from the environment for the first two.
 SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
+# SPHINXBUILD   ?= sphinx-build
+SPHINXBUILD   ?= /home/majestix/hdd/python/bin/python3.12 -msphinx
+
 SOURCEDIR     = source
 BUILDDIR      = build
 

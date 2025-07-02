@@ -290,6 +290,89 @@ def path4_ll(config, which="datadir", postfix=None):
     if which == "image_pdf":
         return path4(config, which="imgdir").joinpath("overview.pdf")
     
+    # High energy light curves (for background checks)
+    if which == "pn_he_lc":
+        import glob
+        gstr = str(path4(config, which="datadir"))+"/odata/*_EPN_*ImagingEvt_he_lc.fits"
+        fnames = glob.glob(gstr)
+        if len(fnames) == 1:
+            return fnames[0]
+        elif len(fnames) == 0:
+            raise Exception("No high energy light curve found for pn (",gstr,")")
+        else:
+            print("More than one high energy light curve found for pn (",gstr,")")
+            det = config["DATA"]["detectors"][0]
+            band = config["LIGHT CURVES"]["energies"][0]
+            print("checking light curve:", det, band)
+            which_str = det+"_crr_lc"
+            print("which str:", which_str, "band:", band)
+            lc_fn = path4(config, which=which_str, postfix=band)
+            from astropy.io import fits as pyfits
+            ff = pyfits.open(lc_fn)
+            exp_str = ff[0].header['EXPIDSTR']
+            gstr = path4(config, which="datadir")+"/odata/*_EPN_"+exp_str+"*ImagingEvt_he_lc.fits"
+            fnames = glob.glob(gstr)
+            if len(fnames) == 1:
+                return fnames[0]
+            else:
+                raise Exception("More than one high energy light curve found for pn (",gstr,")")
+            return lc_fn
+    if which == "m1_he_lc":
+        import glob
+        gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS1_*ImagingEvt_he_lc.fits"
+        fnames = glob.glob(gstr)
+        if len(fnames) == 1:
+            return fnames[0]
+        elif len(fnames) == 0:
+            raise Exception("No high energy light curve found for pn (",gstr,")")
+        else:
+            print("More than one high energy light curve found for pn (",gstr,")")
+            det = config["DATA"]["detectors"][0]
+            band = config["LIGHT CURVES"]["energies"][0]
+            print("checking light curve:", det, band)
+            which_str = det+"_crr_lc"
+            print("which str:", which_str, "band:", band)
+            lc_fn = path4(config, which=which_str, postfix=band)
+            from astropy.io import fits as pyfits
+            ff = pyfits.open(lc_fn)
+            exp_str = ff[0].header['EXPIDSTR']
+            gstr = path4(config, which="datadir")+"/odata/*_EMOS1_"+exp_str+"*ImagingEvt_he_lc.fits"
+            fnames = glob.glob(gstr)
+            if len(fnames) == 1:
+                return fnames[0]
+            else:
+                raise Exception("More than one high energy light curve found for pn (",gstr,")")
+            return lc_fn
+    if which == "m2_he_lc":
+        import glob
+        gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS2_*ImagingEvt_he_lc.fits"
+        fnames = glob.glob(gstr)
+        if len(fnames) == 1:
+            return fnames[0]
+        elif len(fnames) == 0:
+            raise Exception("No high energy light curve found for pn (",gstr,")")
+        else:
+            print("More than one high energy light curve found for pn (",gstr,")")
+            det = config["DATA"]["detectors"][0]
+            band = config["LIGHT CURVES"]["energies"][0]
+            print("checking light curve:", det, band)
+            which_str = det+"_crr_lc"
+            print("which str:", which_str, "band:", band)
+            lc_fn = path4(config, which=which_str, postfix=band)
+            from astropy.io import fits as pyfits
+            ff = pyfits.open(lc_fn)
+            exp_str = ff[0].header['EXPIDSTR']
+            gstr = path4(config, which="datadir")+"/odata/*_EMOS2_"+exp_str+"*ImagingEvt_he_lc.fits"
+            fnames = glob.glob(gstr)
+            if len(fnames) == 1:
+                return fnames[0]
+            else:
+                raise Exception("More than one high energy light curve found for pn (",gstr,")")
+            return lc_fn
+
+
+    
+    # joinpath(config["LIGHT CURVES"]["pn_he_lc"])
     #elif which == "src_reg":
         ##if obsid == None: raise Exception("Need an observation for which='src_reg'")
         #if src == None: raise Exception("Need a source name for which='src_reg'")

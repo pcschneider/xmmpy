@@ -137,10 +137,11 @@ class Obs():
 
         req_str = self.config["XMM"]["archive_request_string"]+self.config["obsID"]+"&level=ODF"
         logging.debug("req_str=%s." % req_str)
-        
+
         ofn = path4(self.config, which="odf_file")
         logging.debug("ofn=%s" % ofn)
-        local_filename, headers = urllib.request.urlretrieve(req_str, ofn)       
+        print("req_str", req_str, "ofn",ofn)
+        local_filename, headers = urllib.request.urlretrieve(req_str, ofn)
         urllib.request.urlcleanup()
         return local_filename
     
@@ -182,13 +183,16 @@ class Obs():
         import astropy.units as u
         if coord is None:
             customSimbad = Simbad()
-            customSimbad.add_votable_fields("pm")
+            customSimbad.add_votable_fields("pmra")
+            customSimbad.add_votable_fields("pmdec")
             result_table = customSimbad.query_object(source)
             if result_table is None or len(result_table) == 0:
                 raise Exception("Cannot retrieve coordinates from Simbad for "+str(source))
-            ra, dec = result_table["RA"][0], result_table["DEC"][0]
-            ra, dec = ra.replace(" ", ":"), dec.replace(" ",":")
-            c = SkyCoord(ra, dec, unit=(u.hourangle, u.deg), pm_ra_cosdec = result_table["PMRA"][0]*u.mas/u.yr, pm_dec = result_table["PMDEC"][0]*u.mas/u.yr, obstime="J2000")
+            print(result_table.columns)
+            ra, dec = result_table["ra"][0], result_table["dec"][0]
+            # print("ra,dec",ra,dec)
+            # ra, dec = ra.replace(" ", ":"), dec.replace(" ",":")
+            c = SkyCoord(ra, dec, unit=(u.deg, u.deg), pm_ra_cosdec = result_table["pmra"][0]*u.mas/u.yr, pm_dec = result_table["pmdec"][0]*u.mas/u.yr, obstime="J2000")
         else:
             c = SkyCoord(coord, unit=(u.hourangle, u.deg))
         

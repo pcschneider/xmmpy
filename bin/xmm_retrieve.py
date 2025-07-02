@@ -3,7 +3,7 @@ import argparse
 import tempfile
 from pathlib import Path
 
-pcall = "/home/majestix/hdd/python/bin/python3.8"
+pcall = "/home/majestix/hdd/python/bin/python3.12"
 
 def retriever(obsID, directory, pythoncall=pcall, filename=None):
     """

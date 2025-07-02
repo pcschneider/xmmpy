@@ -73,6 +73,7 @@ Step-by-step Example
 
 Setup paths::
 
+  heainit ; sasinit
   export xmmpy=/home/majestix/hdd/tools/xmmpy
   export PATH=$PATH:${xmmpy}/bin
   export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools

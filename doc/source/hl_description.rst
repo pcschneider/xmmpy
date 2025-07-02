@@ -10,6 +10,9 @@ Some config-file entries
 
 .. * as      
          
+Update path in config-file
+============================
+
 
 Description of high-level scripts
 ======================================
@@ -103,3 +106,8 @@ xmm_full_process
 
 This is a bash-script, which combines :ref:`xmm_retrieve`, :ref:`xmm_source_regions`, and :ref:`xmm_source_products`.
 
+Diagnostic pdf
+----------------
+Generate pdf with some diagnostic information::
+  
+  xmm_generate_pdf.py conf-file
