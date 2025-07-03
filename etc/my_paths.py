@@ -3,6 +3,8 @@ import glob
 import os
 from .my_configs import conffile_reader
 
+def band2postfix(b):
+    return str(b).replace(":","-")+"eV"
 
 def path4(config, which="datadir",postfix=None):
     tmp = path4_ll(config, which=which, postfix=postfix)
@@ -306,11 +308,11 @@ def path4_ll(config, which="datadir", postfix=None):
             print("checking light curve:", det, band)
             which_str = det+"_crr_lc"
             print("which str:", which_str, "band:", band)
-            lc_fn = path4(config, which=which_str, postfix=band)
+            lc_fn = path4(config, which=which_str, postfix=band2postfix(band))
             from astropy.io import fits as pyfits
             ff = pyfits.open(lc_fn)
             exp_str = ff[0].header['EXPIDSTR']
-            gstr = path4(config, which="datadir")+"/odata/*_EPN_"+exp_str+"*ImagingEvt_he_lc.fits"
+            gstr = str(path4(config, which="datadir"))+"/odata/*_EPN_"+exp_str+"*ImagingEvt_he_lc.fits"
             fnames = glob.glob(gstr)
             if len(fnames) == 1:
                 return fnames[0]
@@ -332,11 +334,11 @@ def path4_ll(config, which="datadir", postfix=None):
             print("checking light curve:", det, band)
             which_str = det+"_crr_lc"
             print("which str:", which_str, "band:", band)
-            lc_fn = path4(config, which=which_str, postfix=band)
+            lc_fn = path4(config, which=which_str, postfix=band2postfix(band))
             from astropy.io import fits as pyfits
             ff = pyfits.open(lc_fn)
             exp_str = ff[0].header['EXPIDSTR']
-            gstr = path4(config, which="datadir")+"/odata/*_EMOS1_"+exp_str+"*ImagingEvt_he_lc.fits"
+            gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS1_"+exp_str+"*ImagingEvt_he_lc.fits"
             fnames = glob.glob(gstr)
             if len(fnames) == 1:
                 return fnames[0]
@@ -358,11 +360,11 @@ def path4_ll(config, which="datadir", postfix=None):
             print("checking light curve:", det, band)
             which_str = det+"_crr_lc"
             print("which str:", which_str, "band:", band)
-            lc_fn = path4(config, which=which_str, postfix=band)
+            lc_fn = path4(config, which=which_str, postfix=band2postfix(band))
             from astropy.io import fits as pyfits
             ff = pyfits.open(lc_fn)
             exp_str = ff[0].header['EXPIDSTR']
-            gstr = path4(config, which="datadir")+"/odata/*_EMOS2_"+exp_str+"*ImagingEvt_he_lc.fits"
+            gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS2_"+exp_str+"*ImagingEvt_he_lc.fits"
             fnames = glob.glob(gstr)
             if len(fnames) == 1:
                 return fnames[0]

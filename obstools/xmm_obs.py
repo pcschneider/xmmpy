@@ -113,7 +113,20 @@ class Obs():
             return discover_file(path4(self.config, "odata"), k)
         if k == "obsID":
             return self.config["obsID"]
-    
+
+    def _add_exposure(self, exp):
+        if exp.exp_id in self.exposures:
+            det0 = self.exposures[exp.exp_id].det
+            det1 = exp.det
+            if det0 != det1: # Not the same exposure
+                ii = int(exp.exp_id)+50
+                nexpid = str(ii).zfill(len(exp.exp_id))
+                if nexpid in self.exposures: 
+                    if self.exposures[nexpid].det != exp.det:
+                        raise Exception("Cannot add exposure "+str(exp) + " with new expID:" + str(nexpid))
+                exp.exp_id = nexpid      
+        self.exposures[exp.exp_id] = exp
+
     def write_config(self, fn=None):
         """
           Write config to file. If no filename is provided, get path for config-file from current config
@@ -181,6 +194,12 @@ class Obs():
         from astroquery.simbad import Simbad
         from astropy.coordinates import SkyCoord
         import astropy.units as u
+        ll = logging.getLogger("xmmpy")
+
+        ll.info("        self.exposures:")
+        for k, e in self.exposures.items():
+            ll.debug("          exp: "+str(k)+ " - "+str(e))
+
         if coord is None:
             customSimbad = Simbad()
             customSimbad.add_votable_fields("pmra")
@@ -203,8 +222,9 @@ class Obs():
             cc = c
         
         update_source_in_config(self.config, source)
-        
-        for e in self.exposures.values():
+        ll.info("Exposures: "+str(self.exposures.keys()))
+        for k, e in self.exposures.items():
+            ll.info(" Generating regions for "+str(k)+" ("+str(e)+")")
             regs = e.regions4coordinates(cc, source_name=source)
             
         return dump(self.config)
@@ -219,8 +239,9 @@ class Obs():
             glb_str = os.path.expanduser(str(path4(self.config, which=det+"_evt")))
             fn = glob.glob(glb_str)
             if len(fn)==1:
-                exp = xe.Exposure(fn[0], self.config)            
-                self.exposures[exp.exp_id] = exp
+                exp = xe.Exposure(fn[0], self.config)      
+                self._add_exposure(exp) 
+                
         
     def populate_exposures(self):
         """
@@ -242,22 +263,18 @@ class Obs():
             ll.info("  Detector %s -> %s" % (det, filename))
             try:
                 exp = xe.Exposure(filename, self.config)
-                if exp.exp_id in self.exposures:
-                    det0 = self.exposures[exp.exp_id].det
-                    det1 = exp.det
-                    if det0 != det1: # Not the same exposure
-                        ii = int(exp.exp_id)+1
-                        nexpid = str(ii).zfill(len(exp.exp_id))
-                        exp.exp_id = nexpid
-                self.exposures[exp.exp_id] = exp
+                self._add_exposure(exp)
                 start_times[exp.exp_id] = exp["start"]
                 stop_times[exp.exp_id] = exp["stop"]
                 #print("XXX", exp.exp_id, start_times)
                 cnt+=1
-                ll.info("        with EXP_ID=%s" % exp.exp_id)
-                 
+                ll.debug("        with EXP_ID=%s" % exp.exp_id)
+                ll.debug("        self.exposures[exp.exp_id]:"+str(self.exposures[exp.exp_id]))
+                # ll.info("        o_expid: "+str(o_expid))
+                
             except Exception as EE:
                 ll.info(str(EE))
+        ll.debug(" exposures:"+ str( self.exposures.keys()))
         min_start = None
         max_stop = None
         for k in start_times:
@@ -266,6 +283,7 @@ class Obs():
             
         self.obs_start_time = min_start
         self.obs_stop_time = max_stop
+        ll.debug("  Number of exposures:" + str(cnt) +  " exp:"+str(self.exposures.items()))
         return cnt    
     
     def gen_spec_shell_scripts(self, sas_init=False, margin_sec=1):

@@ -9,7 +9,8 @@ import matplotlib
 import numpy as np
 import copy
 from pathlib import Path
-from os.path import basename, abspath
+# import os
+from os.path import basename, abspath, exists
 import pathlib
 import glob
 from matplotlib.pyplot import cm
@@ -30,6 +31,8 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
         """
         NOTE: Plots only the first region entry in the file
         """
+        if exists(fn) is False:
+            return None
         with pyfits.open(fn) as rff:
             if rff[1].data[0][0].lower() == "circle":
                 x, y, r = rff[1].data[0][1], rff[1].data[0][2], rff[1].data[0][3]
@@ -40,7 +43,9 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
         return x,y,r, pth
 
 
-    
+    if exists(image_fn) is False:
+        return None
+
     ff = pyfits.open(image_fn)
     wcs = WCS(ff[0].header, key="L")
 
@@ -69,23 +74,28 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     cbar.set_ticklabels(["1","2","3","4","6","10"])
     
     sx, sy, sr, _ = add_patch(region_fn)
+    tlim1 = (sx-r_scaling*sr, sy-r_scaling*sr)
+    tlim2 = (sx+r_scaling*sr, sy+r_scaling*sr)        
     if bkg_region_fn:
         if isinstance(bkg_region_fn, str) or isinstance(bkg_region_fn, Path):
             bkg_region_fn = [bkg_region_fn]
         
         color = iter(cm.rainbow(np.linspace(0, 2, len(bkg_region_fn))))    
+        dx = None
         for c, fn in zip(color, bkg_region_fn):
-            bx, by, br, p = add_patch(fn)
+            tmp = add_patch(fn)
+            if tmp is not None:
+                bx, by, br, p = tmp
             #print("bkg", bx, by, br)
-            p.set(label=basename(str(fn)))
-            p.set(edgecolor=c)
-            #ax.annotate(fn, xy=(bx, by+br), transform=ax.get_transform('world'))
-        dx, dy, dr = 0.5*(sx+bx), 0.5*(sy+by), br
-        tlim1 = (dx-5*dr, dy-5*dr)
-        tlim2 = (dx+5*dr, dy+5*dr)        
-    else:
-        tlim1 = (sx-r_scaling*sr, sy-r_scaling*sr)
-        tlim2 = (sx+r_scaling*sr, sy+r_scaling*sr)        
+                p.set(label=basename(str(fn)))
+                p.set(edgecolor=c)
+                #ax.annotate(fn, xy=(bx, by+br), transform=ax.get_transform('world'))
+                dx, dy, dr = 0.5*(sx+bx), 0.5*(sy+by), br
+        if dx is not None:
+            tlim1 = (dx-5*dr, dy-5*dr)
+            tlim2 = (dx+5*dr, dy+5*dr)        
+    # else:
+        
 
     #ll = ax.get_xticks()[::3]
     # print(ll)
@@ -265,6 +275,9 @@ def ax4image_and_regions(image_fn, region_fns, r_scaling=2, ax=None):
 
 
 def ax4lightcurve(lc_fn, fig=None, subplot_arg=(1,1,1), yscale='linear', verbose=1):
+    if exists(lc_fn) is False:
+        print("File does not exist: %s" % lc_fn)
+        return None
     if fig is None:
         fig = plt.figure()
     # lc_fn = str(lc_fn).replace("src", "crr")

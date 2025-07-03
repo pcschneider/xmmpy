@@ -32,6 +32,7 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
         lo, hi = band.split(":")
         e_expression = str(lo)+"-"+str(hi)+"eV"
         image_fn = path4(obs.config, e.det+"_image", postfix=e_expression)
+        if os.path.exists(image_fn) is False: return None
 
         src_reg_fn = path4(obs.config, "src_reg")
         bkg_reg_fn = path4(obs.config, "bkg_"+e.det+"_reg")
@@ -49,16 +50,18 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
         with pyfits.open(src_reg_fn) as rff:
             sx, sy, sr = rff[1].data["X"][0], rff[1].data["Y"][0], rff[1].data["R"][0]
             if verbose>2: print("src-reg: ",sx, sy, sr, end="")
-        if bkg_reg_fn:    
+        if bkg_reg_fn and os.path.exists(bkg_reg_fn):    
             with pyfits.open(bkg_reg_fn) as rff:
                 bx, by, br = rff[1].data["X"][0], rff[1].data["Y"][0], rff[1].data["R"][0]
             if verbose>2: print(" bkg-reg:", bx,by, br)
         else:
             if verbose>2: print()   
-            
-        axs[-1].set_title(str(e.exp_id)+" ("+e.det+")")
+        
+        if axs[-1] is not None:
+            axs[-1].set_title(str(e.exp_id)+" ("+e.det+")")
         line_temp = str(" ; %15s" % str(e.exp_id))
         dets_temp = "                  %s        " % e.det
+
 
         with pyfits.open(image_fn) as ff:
             wcs = WCS(ff[0].header)
@@ -72,7 +75,7 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
             src_phot = aperture_photometry(ff[0].data, ap_src, wcs=wcs)
             if verbose>2: print("src-phot", src_phot)
 
-            if bkg_reg_fn and str(bkg_reg_fn).lower().strip()!="none":
+            if bkg_reg_fn and os.path.exists(bkg_reg_fn) and str(bkg_reg_fn).lower().strip()!="none":
                 #print("XXX", bkg_reg_fn, type(bkg_reg_fn))  
                 tmp = wcsL.wcs_world2pix(bx, by, 1)
                 sky = wcs.wcs_pix2world(tmp[0], tmp[1], 1)
@@ -90,7 +93,7 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
             bb = band.split(":")
             plt.annotate("epoch: %s, energies: %6s - %6s (eV)" % (ff[0].header["DATE-OBS"].split("T")[0], bb[0], bb[1]),  xy=(plt_txt_x, 0.396), xycoords="figure fraction")
             plt.annotate("%s: ds9 %s -region load %s -region load %s" % (e.det, image_fn, src_reg_fn, bkg_reg_fn), xy=(0.02, 0.02+i*0.03), xycoords="figure fraction", size=3, annotation_clip=False)
-            if bkg_reg_fn:                  
+            if bkg_reg_fn and os.path.exists(bkg_reg_fn) and str(bkg_reg_fn).lower().strip()!="none":                  
                 plt.annotate("%s - src: %7i    bkg: %7i    net: %8.1f  rate (cts/ks): %8.2f" % (e.det, src_phot["aperture_sum"], bkg_phot["aperture_sum"], net_cts, net_cts/ff[0].header["EXPOSURE"]*1000), xy=(plt_txt_x, 0.3+i*0.03), xycoords="figure fraction")
             else:
                 plt.annotate("%s - src: %5i" % (e.det, src_phot["aperture_sum"]), xy=(plt_txt_x, 0.3+i*0.03), xycoords="figure fraction")
@@ -129,7 +132,9 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
                 e = namedtuple('exposure', ['det', 'exp_id'])
                 e.det, e.exp_id = d, None
 
-            lt, dt = one_panel(i, e, band=band, fig=fig) # index, exposure, band, plt.figure
+            tmp = one_panel(i, e, band=band, fig=fig) # index, exposure, band, plt.figure
+            if tmp is None: continue
+            lt, dt = tmp
             i+=1
             print("i:",i)
             line+=lt

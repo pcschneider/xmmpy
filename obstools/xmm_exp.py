@@ -19,7 +19,7 @@ class Exposure():
         self.det = mp[ff[0].header["INSTRUME"]]        
       self.config = config
       ll = logging.getLogger("xmmpy")
-      ll.debug("Initialized image_file(oi, e.det)exposure with %s and evt-files \'%s\'." % (self.exp_id, self.evt_filename))
+      ll.debug("Initialized  exposure with %s and evt-files \'%s\'." % (self.exp_id, self.evt_filename))
       
   def __str__(self):
       return "Exp: "+str(self.exp_id)+" ("+str(self.det)+" -> "+str(self.evt_filename)+")"
