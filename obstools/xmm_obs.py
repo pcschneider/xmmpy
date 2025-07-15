@@ -45,7 +45,7 @@ class Obs():
     """
 
     @cnf_support("conf_file")
-    def __init__(self, obsID=None, conf_file = None, directory = None, populate=True):
+    def __init__(self, obsID=None, conf_file = None, directory = None, populate=True, verbose=1):
         """
         Parameters
         ----------
@@ -53,9 +53,13 @@ class Obs():
           config file containing the description for the names of pn-files etc.
         
         """
-        
+        self.verbose=verbose
         self.exposures = {} 
         self.initialized = False
+        self.observation_start = None # Start of pn exposure
+        self.first_ontime = None      # Time of first exposure (probably m1 start time, pn starts later in the sequence)
+        self.last_ontime = None       # Time of last exposure  (probably m2 stop time)
+
         yy = ""
         if conf_file is None and obsID is None:
             raise ValueError("You need to provide at least an obsID, or a suitable config-file.")
@@ -81,7 +85,7 @@ class Obs():
             ll.info("Using basedir="+bd)
 
         rr = dump(self.config)
-        if rr:
+        if rr and self.verbose>1:
             ll.debug(36*"=" + " CONFIG " + 36*"=")
             ll.debug("\n"+rr)
             ll.debug(80*"=")
@@ -91,6 +95,39 @@ class Obs():
             if ne == 0: ll.info("No exposures found for "+str(self) + " in "+self.config["DATA"]["basedir"])
             else: self.initialized = True
         
+    def _set_start_time(self, verbose=None):
+        """
+        Set start time for observations, use 'pn' start time
+        """
+        if verbose is None:
+            verbose = self.verbose
+        ll = logging.getLogger("xmmpy")
+
+        min_start = None
+        max_stop = None
+        start_times, stop_times = {}, {}
+
+        for exp in self.exposures.values():   # Get start and stop times for all exposures
+            try:
+                start_times[exp.exp_id] = exp["start"]
+                stop_times[exp.exp_id] = exp["stop"] 
+            except Exception as EE:
+                ll.info(str(EE))
+
+        for k in start_times: # set min and max times
+            if min_start is None or min_start > start_times[k]: min_start = start_times[k]
+            if max_stop is None or max_stop < stop_times[k]: max_stop = stop_times[k]
+            
+        self.first_ontime = min_start
+        self.last_ontime = max_stop
+
+        for e in self.exposures.values(): # set start of observation to pn start
+            if e.det == "pn":
+                st = e["start"]
+                self.observation_start = st
+                ll.info("Setting observation start time to "+str(st)+" from pn exposure (expID="+e.exp_id+")")
+                break
+
     def __str__(self):
         """
         ObsID plus some text.
@@ -254,9 +291,12 @@ class Obs():
         """
         detectors = self.config["DATA"]["detectors"]
         ll = logging.getLogger("xmmpy")
+        if self.verbose==0:
+            ll.setLevel(logging.WARNING)
+        elif self.verbose==1:
+            ll.setLevel(logging.INFO)
         #ll.debug(80*"=")
         ll.info("Populating exposures:")
-        start_times, stop_times = {}, {}
         cnt = 0
         for det in detectors:
             filename = path4(self.config, det+"_evt")
@@ -264,8 +304,8 @@ class Obs():
             try:
                 exp = xe.Exposure(filename, self.config)
                 self._add_exposure(exp)
-                start_times[exp.exp_id] = exp["start"]
-                stop_times[exp.exp_id] = exp["stop"]
+                # start_times[exp.exp_id] = exp["start"]
+                # stop_times[exp.exp_id] = exp["stop"]
                 #print("XXX", exp.exp_id, start_times)
                 cnt+=1
                 ll.debug("        with EXP_ID=%s" % exp.exp_id)
@@ -275,14 +315,7 @@ class Obs():
             except Exception as EE:
                 ll.info(str(EE))
         ll.debug(" exposures:"+ str( self.exposures.keys()))
-        min_start = None
-        max_stop = None
-        for k in start_times:
-            if min_start is None or min_start > start_times[k]: min_start = start_times[k]
-            if max_stop is None or max_stop < stop_times[k]: max_stop = stop_times[k]
-            
-        self.obs_start_time = min_start
-        self.obs_stop_time = max_stop
+        self._set_start_time(verbose=self.verbose)
         ll.debug("  Number of exposures:" + str(cnt) +  " exp:"+str(self.exposures.items()))
         return cnt    
     
@@ -302,9 +335,10 @@ class Obs():
             ofn = path4(self.config, which = e.det+"_spec_script")
             tmp = ""
             tb = self.config["SPECTRA"]["time_bins"]
+            ll.debug("Time bins: "+str(tb))
             if str(tb).lower() != "none" and str(tb)!="":
                 if type(tb) == int:
-                    t0, t1 = self.obs_start_time - margin_sec*aunits.second, self.obs_stop_time + margin_sec*aunits.second
+                    t0, t1 = self.first_ontime - margin_sec*aunits.second, self.last_ontime + margin_sec*aunits.second
                     bins = list([[t0+i*(t1-t0)/tb, t0+(i+1)*(t1-t0)/tb] for i in range(tb)])
                     dt = (t1.cxcsec-t0.cxcsec)/tb/1000
                     ll.info("Generating "+str(bins)+ " (time) bins for EPIC spectra with "+str("5.2f ks binning." % dt))
@@ -312,15 +346,15 @@ class Obs():
                         xmm_sec0, xmm_sec1 = bb[0].cxcsec, bb[1].cxcsec
                         pf = str("_%iks_bin%i" % (dt,j))
                         x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
-                        tmp+=str("echo \"Spectrum bin %i for %4.1fks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.obs_start_time.cxcsec)/1000, (xmm_sec1-self.obs_start_time.cxcsec)/1000, pf))
+                        tmp+=str("echo \"Spectrum bin %i for %4.1fks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.first_ontime.cxcsec)/1000, (xmm_sec1-self.first_ontime.cxcsec)/1000, pf))
                         tmp+=x
                     print(tmp)
                     x = tmp
                 elif type(tb) == list:
                     ll.info(str("Generating EPIC spectra using time intervals from config-file (#%i)." % len(tb)))
                     for j, bb in enumerate(tb):
-                        xmm_sec0 = self.obs_start_time.cxcsec + bb[0]*1000.
-                        xmm_sec1 = self.obs_start_time.cxcsec + bb[1]*1000.
+                        xmm_sec0 = self.observation_start.cxcsec + bb[0]*1000.
+                        xmm_sec1 = self.observation_start.cxcsec + bb[1]*1000.
                         if float(bb[0]).is_integer() and float(bb[1]).is_integer():
                             pf = str("_%i_%iks" % (bb[0], bb[1]))
                         else:
@@ -328,7 +362,7 @@ class Obs():
                         ll.info("Generating EPIC spectrum "+str(j)+" for "+str(bb)+str(" or %.3f, %.3f sec)" % (xmm_sec0, xmm_sec1)))
                         print(pf, xmm_sec0, xmm_sec1)
                         x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
-                        tmp+=str("echo \"Spectrum bin %i from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, (xmm_sec0-self.obs_start_time.cxcsec)/1000, (xmm_sec1-self.obs_start_time.cxcsec)/1000, pf))
+                        tmp+=str("echo \"Spectrum bin %i from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, (xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000, pf))
                         tmp+=x
                     x = tmp
             else:

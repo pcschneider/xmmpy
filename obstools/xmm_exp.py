@@ -38,7 +38,7 @@ class Exposure():
               
       elif isinstance(k, str) and k.lower() == "exposure":
           with pyfits.open(self.evt_filename) as ff:
-              return ff[0].header["Duration"]
+              return ff[1].header["ONTIME"]
             
       elif isinstance(k, str) and k.lower() == "start":
           # Return decimalyear of OBSSTART
@@ -52,6 +52,12 @@ class Exposure():
               x = ff[0].header["DATE-END"]
               return Time(str(x), format='isot')
 
+      elif isinstance(k, str):
+            with pyfits.open(self.evt_filename) as ff:
+                if k in ff[0].header:
+                    return ff[0].header[k]  
+
+        
 
       return None
         

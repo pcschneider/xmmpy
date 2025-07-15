@@ -304,8 +304,14 @@ def ax4lightcurve(lc_fn, fig=None, subplot_arg=(1,1,1), yscale='linear', verbose
 
 
 
-def check_one_config(fn, band="0.5-2.0keV"):
-    cnf = read_config(fn)
+def check_one_config(fn, band="0.5-2.0keV", verbose=1):
+    obs = Obs(fn, verbose=verbose)
+    cnf = obs.config
+    os = [e.start for e in obs.exposures.values()]
+    print(os)
+    if np.std(os)>1e3:
+        raise Exception("Start times don't agree")
+    obs_start = np.min(os)
     sur = Surrounding(fn)
     dr = str(path4(cnf, which='odata'))
     print(cnf["DATA"]["detectors"])

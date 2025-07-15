@@ -1,6 +1,10 @@
 Documentation of the class and scripts
 --------------------------------------
 
+Time
+-----
+The 'time since start of obs' refers to the pn-detector.
+
 Add new data products
 ------------------------
 Steps needed to add new data products:

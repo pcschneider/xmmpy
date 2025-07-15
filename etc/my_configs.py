@@ -445,11 +445,11 @@ def write_config(cnf, ofn='test.conf', overwrite=False):
     with open(ofn, "w") as oo:
         oo.write(rr)
         
-def cnf_support(kw):
+def cnf_support(kw, verbose=1):
     """
     Adds the  keyword-option to a function, i.e., the return-value can be written to a file specified by 'cnf'
     """
-    def deco(func, verbose=1):
+    def deco(func, verbose=verbose):
         # def cnf_support(func, verbose=1):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -467,7 +467,10 @@ def cnf_support(kw):
             elif kw in kwargs:
                 cf = kwargs[kw]
                 if not isinstance(cf, dict):
-                    cf = read_config(cf)
+                    if 'verbose' in kwargs:
+                        verbose = kwargs['verbose']
+                    else: verbose=1
+                    cf = read_config(cf, verbose=verbose)
                     kwargs[kw] = cf
                     if verbose>1: print("kw arg, new kwargs: ",kwargs)
             r = func(*nargs, **kwargs)

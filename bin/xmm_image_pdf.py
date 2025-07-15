@@ -90,6 +90,7 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
 
             if verbose>2: print(" net", net_cts)
             plt.annotate("%2s - exposure: %4.1f ks, filter: %s" % (e.det, ff[0].header["EXPOSURE"]/1000., ff[0].header["Filter"]), xy=(plt_txt_x, 0.2 + i*0.03), xycoords="figure fraction")
+            plt.annotate("Obs. start: %s, %.2f, %.3f" % (e["start"], e["start"].cxcsec, e["start"].decimalyear), xy=(plt_txt_x, 0.35), xycoords="figure fraction")
             bb = band.split(":")
             plt.annotate("epoch: %s, energies: %6s - %6s (eV)" % (ff[0].header["DATE-OBS"].split("T")[0], bb[0], bb[1]),  xy=(plt_txt_x, 0.396), xycoords="figure fraction")
             plt.annotate("%s: ds9 %s -region load %s -region load %s" % (e.det, image_fn, src_reg_fn, bkg_reg_fn), xy=(0.02, 0.02+i*0.03), xycoords="figure fraction", size=3, annotation_clip=False)
@@ -158,6 +159,7 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
     oi = obs.config["obsID"]
     plt.annotate(name+" ("+oi+")", xy=(plt_txt_x, 0.48), xycoords="figure fraction", size=14)
     bb = band.split(":")
+
     #print("bb",bb)
     #plt.annotate("energies (eV): %5s - %5s" % (bb[0],bb[1]), xy=(plt_txt_x, 0.45), xycoords="figure fraction", size=8)
     if conf_file: plt.annotate(conf_file, xy=(plt_txt_x, 0.425), xycoords="figure fraction", size=6, color='0.5')
