@@ -27,13 +27,15 @@ def time2ks(conf, t=None, margin_sec=1, verbose=1):
 
 def time_overview(conf, verbose=1):
     obs = Obs(conf_file=conf, verbose=verbose)
+    print("Obs %s has start-time: %8.1f (%s)" % (obs.config["obsID"], obs.observation_start.cxcsec, obs.observation_start.iso))
     for e in obs.exposures.values():
         print("Exposure: ", e)
         t0, duration = e['start'], e["exposure"]
         print("      starting at: %s; mjd: %.4f; cxcsec: %.2f; ontime: %.2f ks" % (t0, t0.mjd, t0.cxcsec, duration/1e3))
-        # print("Exposure start time: ", e.exp_start_time)
-        # print("Exposure stop time: ", e.exp_stop_time)
-        # print("Exposure duration: ", e.exp_duration)
+    time_bins, tb_iso = obs._time_bins(), obs._time_bins(ref_system='iso')
+    for b, c in zip(time_bins, tb_iso):
+        print("Time bin: ", b, "(Telescope time) or ",c, "Duration: ",(b[1]-b[0])/1000, "ks")
+
         
 if __name__ == "__main__":
     args = argparse.ArgumentParser()

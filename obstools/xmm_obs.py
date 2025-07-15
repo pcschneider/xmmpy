@@ -12,6 +12,8 @@ from xmmpy.etc import read_config, addFileHandler, setup_logging, default_config
 #from xmmpy.etc import shell_scripts as xmm_scripts
 from yaml import dump 
 from ..etc import path4
+from astropy.time import Time
+import numpy as np
 
 def discover_file(directory, typ):
     """
@@ -278,8 +280,7 @@ class Obs():
             if len(fn)==1:
                 exp = xe.Exposure(fn[0], self.config)      
                 self._add_exposure(exp) 
-                
-        
+                   
     def populate_exposures(self):
         """
         Looks for the event-files at the expected location (from the current  config). 
@@ -330,6 +331,71 @@ class Obs():
             r+="source "+sfn+"\n\n"
     
         ll = logging.getLogger("xmmpy")
+        ll.setLevel(logging.DEBUG)
+        for e in self.exposures.values(): 
+            ll.info("Generating spectral extraction script for "+str(e))
+            ofn = path4(self.config, which = e.det+"_spec_script")
+            tmp = ""
+            tbstr = self.config["SPECTRA"]["time_bins"]
+            if str(tbstr).lower() == "none" or str(tbstr)=="":  # No time bins specified
+                ll.debug("No time bins specified for spectra (obsID="+str(self["obsID"])+")")
+                ll.debug(str(tbstr))
+                x = spec_script(e, ofn = ofn)
+            else:
+                tb = self._time_bins(product="spectra", index=None, margin_sec=margin_sec)
+                ll.debug("Time bins: "+str(tb))
+                uniform_time_bins = False
+                dts = [x[1] - x[0] for x in tb]
+                if len(dts)>1 and np.std(dts)<1:
+                    dt = np.mean(dts)
+                    uniform_time_bins = True
+            
+                if uniform_time_bins:
+                    ll.info("Generating "+str(len(tb))+ " (time) bins for EPIC spectra with "+str("5.2f ks binning." % dt))
+                    for j, bb in enumerate(len(tb)):
+                        xmm_sec0, xmm_sec1 = tb[0], tb[1]
+                        pf = str("_%iks_bin%i" % (dt,j))
+                        x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
+                        tmp+=str("echo \"Spectrum bin %i for %4.1f ks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.first_ontime.cxcsec)/1000, (xmm_sec1-self.first_ontime.cxcsec)/1000, pf))
+                        tmp+=x
+                    print(tmp)
+                    x = tmp
+                else:
+                    ll.info(str("Generating EPIC spectra using time intervals from config-file (#%i specs)." % len(tb)))
+                    for j, bb in enumerate(tb):
+                        xmm_sec0 = bb[0]
+                        xmm_sec1 = bb[1]
+                        tt0, tt1 = (xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000
+                        if float(tt0).is_integer() and float(tt1).is_integer():
+                            pf = str("_%i_%iks" % (tt0, tt1))
+                        else:                            
+                            pf = str("_%.1f-%.1fks" % (tt0, tt1))
+                        ll.info("Generating EPIC spectrum "+str(j)+" for "+str(bb)+str(" or %.3f, %.3f sec)" % ((xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000))) #str(" from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (xmm_sec0, xmm_sec1)))
+                        ll.info("    name for EPIC spectrum "+str("'%s' with postfix=%s" % (ofn, pf)))
+                        print(pf, xmm_sec0, xmm_sec1)
+                        x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
+                        tmp+=str("echo \"Spectrum bin %i from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, (xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000, pf))
+                        tmp+=x
+                    x = tmp
+            
+            r+=x
+        ofn = path4(self.config, which = "spec_script")
+        ll.info("Writing spec script to "+str(ofn))
+        with open(ofn, "w") as oo:
+            oo.write(r)
+        return r
+    
+    def gen_spec_shell_scripts_old(self, sas_init=False, margin_sec=1):
+        """
+        Generate SAS shell script for spectra
+        """
+        from ..scripttools import spec_script
+        r = ""
+        if sas_init:
+            sfn = str(path4(self.config, "SAS_init_script"))
+            r+="source "+sfn+"\n\n"
+    
+        ll = logging.getLogger("xmmpy")
         for e in self.exposures.values(): 
             ll.info("Generating spectral extraction script for "+str(e))
             ofn = path4(self.config, which = e.det+"_spec_script")
@@ -346,7 +412,7 @@ class Obs():
                         xmm_sec0, xmm_sec1 = bb[0].cxcsec, bb[1].cxcsec
                         pf = str("_%iks_bin%i" % (dt,j))
                         x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
-                        tmp+=str("echo \"Spectrum bin %i for %4.1fks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.first_ontime.cxcsec)/1000, (xmm_sec1-self.first_ontime.cxcsec)/1000, pf))
+                        tmp+=str("echo \"Spectrum bin %i for %4.1f ks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.first_ontime.cxcsec)/1000, (xmm_sec1-self.first_ontime.cxcsec)/1000, pf))
                         tmp+=x
                     print(tmp)
                     x = tmp
@@ -373,7 +439,7 @@ class Obs():
         with open(ofn, "w") as oo:
             oo.write(r)
         return r
-    
+
     def gen_lc_shell_scripts(self, sas_init=False):
         """
         Generate SAS shell-script for light curves
@@ -468,7 +534,6 @@ class Obs():
             oo.write(r)
         return r
         
-        
     @ofn_support    
     def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, img=None, sas_init=True):
         """
@@ -504,7 +569,68 @@ class Obs():
             r+=self.gen_img_shell_scripts()
         return r
     
+    def _time_bins(self, index=None, product='spectra', ref_system='Telescope', margin_sec=1):
+        """
+        Start and stop times for data products.
+
+        Parameters
+        ------------
+        index : int
+            specific bin or all if None
+        product : str
+            Currently, only 'spectra' are supported
+        ref_system : str
+            Must be in ['Telescope', 'ks_after_obs_start', 'MJD', 'iso']
+        margin_sec : float
+            Shifts start time and stop time by this many seconds, i.e., observation/exposure will be longer by (-margin_sec, +margin_sec).
+
+        Returns
+        ---------
+        list of (start, stop) in cxcsec for ref_system=='Telescope', or in other specificed format
+        """
+        ll = logging.getLogger("xmmpy")
+
+        if product.lower() != "spectra":
+            raise Exception("Only 'product=spectra' supported.")
         
+        tb = self.config["SPECTRA"]["time_bins"]
+        ll.debug("Time bins: "+str(tb))
+        obst = []
+        if str(tb).lower() != "none" and str(tb)!="":
+            if type(tb) == int:
+                t0, t1 = self.first_ontime - margin_sec*aunits.second, self.last_ontime + margin_sec*aunits.second
+                bins = list([[t0+i*(t1-t0)/tb, t0+(i+1)*(t1-t0)/tb] for i in range(tb)])
+                obst = bins
+            elif type(tb) == list:
+                ll.info(str("Generating EPIC spectra using time intervals from config-file (#%i)." % len(tb)))
+                for j, bb in enumerate(tb):
+                    xmm_sec0 = self.observation_start.cxcsec + bb[0]*1000.
+                    xmm_sec1 = self.observation_start.cxcsec + bb[1]*1000.
+                    obst.append([xmm_sec0, xmm_sec1])
+        else: # no time bins specified
+            t0, t1 = self.first_ontime.cxcsec - margin_sec, self.last_ontime.cxcsec + margin_sec
+            obst.append((t0, t1))
+        ll.debug("Time bins for '%s' are: "+str(obst)+ " in "+str(ref_system)+" time.")
+        if ref_system == "Telescope":
+            return obst
+        else:
+            out = []
+            for p in obst:
+                if ref_system == "ks_after_obs_start":
+                    tmp = [p[0]-self.observation_start.cxcsec, p[1]-self.observation_start.cxcsec]
+                    out.append([tmp[0]/1000., tmp[1]/1000.])
+                elif ref_system == "MJD":
+                    tmp0 = [Time(p[0], format='cxcsec'), Time(p[1], format='cxcsec')]
+                    tmp1 = [tmp0[0].mjd, tmp0[1].mjd  ]
+                    out.append(tmp1)
+                elif ref_system == "iso":
+                    tmp0 = [Time(p[0], format='cxcsec'), Time(p[1], format='cxcsec')]
+                    tmp1 = [tmp0[0].iso, tmp0[1].iso  ]
+                    out.append(tmp1)
+                else:
+                    raise Exception("Unknown reference system: "+str(ref_system))
+            return out
+        return None
         
         
 if __name__ == "__main__":

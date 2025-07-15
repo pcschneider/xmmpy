@@ -1,9 +1,17 @@
 Documentation of the class and scripts
 --------------------------------------
 
+.. _Time:
+
 Time
 -----
 The 'time since start of obs' refers to the pn-detector.
+
+An overview of the different times can be shown by running::
+
+    p12 $xmmpy/bin/xmm_time_tools.py CONF-FILE
+
+Internally, all times are expressed in Telescope seconds (=cxcsec).
 
 Add new data products
 ------------------------
@@ -39,6 +47,15 @@ Functions
 |
 
 .. automethod:: xmmpy.etc.update_value_in_config
+
+
+.. _scripts:
+
+Scripts
+-------
+
+.. automethod:: xmmpy.bin.page4obs
+
 
 Classes
 -------

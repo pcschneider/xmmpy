@@ -17,8 +17,9 @@ import os.path
 from astropy.coordinates import SkyCoord
 #from my_filenames import image_file, target_conf, coverage_fn
 from collections import namedtuple
+import logging
 
-def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
+def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
     def one_panel(i, e, fig=None, band=None):
         """
         Plot one detector (or rather exposure)
@@ -90,7 +91,8 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
 
             if verbose>2: print(" net", net_cts)
             plt.annotate("%2s - exposure: %4.1f ks, filter: %s" % (e.det, ff[0].header["EXPOSURE"]/1000., ff[0].header["Filter"]), xy=(plt_txt_x, 0.2 + i*0.03), xycoords="figure fraction")
-            plt.annotate("Obs. start: %s, %.2f, %.3f" % (e["start"], e["start"].cxcsec, e["start"].decimalyear), xy=(plt_txt_x, 0.35), xycoords="figure fraction")
+            plt.annotate("Obs. start: %s, %.2f" % (obs.observation_start, obs.observation_start.cxcsec), xy=(plt_txt_x, 0.37), xycoords="figure fraction")
+            plt.annotate("Exp. start: %s, %.2f, %.3f" % (e["start"], e["start"].cxcsec, e["start"].decimalyear), xy=(plt_txt_x, 0.35), xycoords="figure fraction")
             bb = band.split(":")
             plt.annotate("epoch: %s, energies: %6s - %6s (eV)" % (ff[0].header["DATE-OBS"].split("T")[0], bb[0], bb[1]),  xy=(plt_txt_x, 0.396), xycoords="figure fraction")
             plt.annotate("%s: ds9 %s -region load %s -region load %s" % (e.det, image_fn, src_reg_fn, bkg_reg_fn), xy=(0.02, 0.02+i*0.03), xycoords="figure fraction", size=3, annotation_clip=False)
@@ -100,7 +102,8 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
                 plt.annotate("%s - src: %5i" % (e.det, src_phot["aperture_sum"]), xy=(plt_txt_x, 0.3+i*0.03), xycoords="figure fraction")
 
         return line_temp, dets_temp
-        
+    
+    logger = logging.getLogger("xmmpy")    
     name = obs.config["DATA"]["source_name"]
     if conf_file is None:
         global cnf_file
@@ -143,12 +146,33 @@ def one_page(obs, band=None, conf_file=None, det='pn', verbose=10):
             lc_fn = path4(obs.config, e.det+"_crr_lc", postfix=band.replace(":","-")+'eV') # pn_src_lc
         
             print("lc_fn",lc_fn)
-            ax4lightcurve(lc_fn, fig=fig, subplot_arg=(2,2,i+1), verbose=verbose)
+            lca = ax4lightcurve(lc_fn, t0=obs.observation_start.cxcsec, fig=fig, subplot_arg=(2,2,i+1), verbose=verbose)
             he_lc_fn = path4(obs.config, e.det+"_he_lc")
             print("he_lc_fn",he_lc_fn, "(",d,")")
             if he_lc_fn is not None:
-                ax4lightcurve(he_lc_fn, fig=fig, subplot_arg=(2,2,i+2), yscale='log', verbose=verbose)
+                helca = ax4lightcurve(he_lc_fn, t0=obs.observation_start.cxcsec, fig=fig, subplot_arg=(2,2,i+2), yscale='log', verbose=verbose)
+            else:
+                helca = None
             
+            tb = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
+            try:
+                tb = obs.config["SPECTRA"]["time_bins"]
+            except Exception as EE:
+                logger.info("No time bins found in conf file")
+                print("Exception: %s" % EE)
+            logger.info("Using time bins: " + str(tb))
+            if tb is not None:
+                tb = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
+            print("TB:", tb)
+            if tb is not None:
+                for b in tb:
+                    if b is not float and b is not int: 
+                        if len(b) == 2:
+                            lca.axvline(x=b[0],ls=':')
+                            lca.axvline(x=b[1],ls=':')
+                            if helca is not None:
+                                helca.axvline(x=b[0],ls=':')
+                                helca.axvline(x=b[1],ls=':')
     else:
         plt.gca().axis('off')
         plt.annotate("no usable exposure", xy=(0.1,0.9), xycoords="figure fraction", size=14)
@@ -199,11 +223,12 @@ if __name__ == "__main__":
         for b in obs.config["IMAGES"]["energies"]:
             for d in obs.config["DATA"]["detectors"]:
                 if verbosity>1: print("Generating pdf for energy band: ",b)
-                fig = one_page(obs, band=b, verbose=verbosity, det=d)
+                fig = page4obs(obs, band=b, verbose=verbosity, det=d)
                 pdf.savefig(fig)  # saves the current figure into a pdf page
                 plt.close()
     # plt.close()
     print("\npdf: ",ofn)
     print(" or: ",os.path.relpath(ofn))
+
 
 

@@ -274,7 +274,7 @@ def ax4image_and_regions(image_fn, region_fns, r_scaling=2, ax=None):
     return ax
 
 
-def ax4lightcurve(lc_fn, fig=None, subplot_arg=(1,1,1), yscale='linear', verbose=1):
+def ax4lightcurve(lc_fn, fig=None, t0=None, subplot_arg=(1,1,1), yscale='linear', verbose=1):
     if exists(lc_fn) is False:
         print("File does not exist: %s" % lc_fn)
         return None
@@ -284,21 +284,22 @@ def ax4lightcurve(lc_fn, fig=None, subplot_arg=(1,1,1), yscale='linear', verbose
     ff = pyfits.open(lc_fn)
     ax = fig.add_subplot(*subplot_arg)
     x, y = ff[1].data["TIME"], ff[1].data["RATE"]
+    if t0 is None: t0 = min(x)
     yerr = ff[1].data["ERROR"]
     ymedian = np.median(y)
     ymean = np.mean(y)
     print("ymedian", ymedian, " ymean", ymean)
     ystd = np.std(y)
-    ax.plot((x-min(x))/1e3, len(x)*[ymedian], color='0.5')
-    ax.fill_between((x-min(x))/1e3, len(x)*[ymedian-ystd], len(x)*[ymedian+ystd], color='0.5', alpha=0.1)
-    ax.errorbar((x-min(x))/1e3, y, yerr=yerr, alpha=0.3, color='b')
-    ax.plot((x-min(x))/1e3, y, color='b')
+    ax.plot((x-t0)/1e3, len(x)*[ymedian], color='0.5')
+    ax.fill_between((x-t0)/1e3, len(x)*[ymedian-ystd], len(x)*[ymedian+ystd], color='0.5', alpha=0.1)
+    ax.errorbar((x-t0)/1e3, y, yerr=yerr, alpha=0.3, color='b')
+    ax.plot((x-t0)/1e3, y, color='b')
 
     ax.set_xlabel("Time (ks)")
     ax.set_ylabel("Rate (cts/s)")
     ax.set_title(basename(lc_fn))
     ax.set_yscale(yscale)
-    plt.annotate("Start time: %i" % min(x), xy=(0.02, -0.37), xycoords="axes fraction")
+    plt.annotate("Start time: %i" % t0, xy=(0.02, -0.37), xycoords="axes fraction")
     plt.annotate("Median: %5.2f, mean: %5.2f (cts/ks)" % (1000* ymedian, 1000* ymean), xy=(0.02, -0.3), xycoords="axes fraction")
     return ax
 

@@ -3,10 +3,18 @@ Some config-file entries
 
 * ``[SPECTRA][time_bins]`` -- must be in ["none", int, [[a0, a1], [b0, b1], ...]
       If "none", the full observation will be used (equal to a parameter value of 1)
-      
+      Times are wrt the start time of the pn-detector, see :ref:`time`.
+
       If int, the observation will be split in ``time_bins`` chunks/intervals. Postfix will be ``_Xks_binX``
       
       If list, the specific time intervals will be used. The unit is ks after start of exposure. Postfix will be ``t0_t1ks``.
+      The list should be defined as::
+
+        SPECTRA:
+          time_bins: 
+          - [0, 10]
+          - [10, 14]
+
 
 .. * as      
          
@@ -111,3 +119,5 @@ Diagnostic pdf
 Generate pdf with some diagnostic information::
   
   xmm_generate_pdf.py conf-file
+
+This runs `page4obs` (see :ref:`scripts`) through ``xmm_image_pdf.py``-script.
