@@ -77,38 +77,43 @@ class Exposure():
    from regions import CircleSkyRegion, Regions
    from astropy.coordinates import Angle
    import numpy as np
-   
-   src = CircleSkyRegion(coord, Angle(src_radius, 'arcsec'), meta={"name":source_name})
-   
    ll = logging.getLogger("xmmpy")
+#    ll.setLevel(logging.DEBUG)
+#    ll.info("Using source position at time of obs: "+str(coord))
+   src = CircleSkyRegion(coord, Angle(src_radius, 'arcsec'), meta={"name":source_name})
    
    with pyfits.open(self.evt_filename) as ff:
        pnt_angle = ff[0].header["PA_PNT"]
-   
+   ll.debug("PA PNT of observation: "+str(pnt_angle))
    rot = 5
    bkg_coord1 = coord.directional_offset_by(Angle(60-pnt_angle+rot, "degree"), Angle(80, "arcsec"))
    bkg_coord2 = coord.directional_offset_by(Angle(210-pnt_angle+rot, "degree"), Angle(80, "arcsec"))
    bkg_coord3 = coord.directional_offset_by(Angle(135-pnt_angle+rot, "degree"), Angle(80, "arcsec"))
-   
+#    ll.debug("bkg3" + str(bkg_coord3))
    bkg1 = CircleSkyRegion(bkg_coord1, Angle(bkg_radius, 'arcsec'))
    bkg2 = CircleSkyRegion(bkg_coord2, Angle(bkg_radius, 'arcsec'))
    bkg3 = CircleSkyRegion(bkg_coord3, Angle(bkg_radius, 'arcsec'))
-   
+#    print(bkg3)
    dct = {"src":src, "bkg1":bkg1, "bkg2":bkg2, "bkg3":bkg3, "bkg": bkg3}
    
    wcs = helper.wcs4xmm(self.evt_filename)
+   ll.debug("using WCS: "+str(wcs))
    if write:
-       ofn = str(path4(self.config, which="src_reg"))
-       ll.info("Writing source region to "+ofn)    
        src_px = src.to_pixel(wcs)
+       ll.debug("writing source region (pix) "+str(src_px))
+       ofn = str(path4(self.config, which="src_reg"))
+       ll.info("Writing source region to file: "+ofn)    
        fits_region_file_writer(src_px, ofn, overwrite=True)
 
        #src_px.write(ofn, overwrite=True, format='fits')
        ofn = str(path4(self.config, which="bkg_"+self.det+"_reg"))
-       ll.info("Writing bkg region to "+ofn)    
        bkg3_px = bkg3.to_pixel(wcs)
+       ll.debug("writing bkg  region (pix)"+str(bkg3_px))
+       ll.info("Writing bkg region to file: "+ofn)    
        fits_region_file_writer(bkg3_px, ofn, overwrite=True)
-   
+#    print(80*"=")
+#    print()
+#    print()
    return dct
     
   def regions(self):

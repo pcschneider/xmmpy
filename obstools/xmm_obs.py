@@ -259,7 +259,8 @@ class Obs():
             cc = c.apply_space_motion(dt=dt * u.year)
         except:
             cc = c
-        
+
+        ll.info("Using source position " +str(cc.ra.degree)+" "+str(cc.dec.degree)+ " (target: "+str(source)+")")
         update_source_in_config(self.config, source)
         ll.info("Exposures: "+str(self.exposures.keys()))
         for k, e in self.exposures.items():
@@ -320,6 +321,69 @@ class Obs():
         ll.debug("  Number of exposures:" + str(cnt) +  " exp:"+str(self.exposures.items()))
         return cnt    
     
+    def spec_files(self):
+        """
+        return dict with list of spectra for each dectector
+        """
+        dct = {}
+        for d in self.config["DATA"]["detectors"]:
+            dct[d] = []
+        
+        # Check if one single spectrum
+        if self.config["SPECTRA"]["time_bins"].lower() == "none":
+            for d in dct:
+                fn = path4(self.config, d+"_bin", postfix="")
+                dct[d].append(fn)
+            return dct
+
+        # Specific timing information for spectra
+        tb, uniform_bins = self._time_bins(product="spectra")
+        if uniform_bins:
+            dts = [x[1] - x[0] for x in tb]
+            if len(dts)>1 and np.std(dts)<1:
+                dt = np.mean(dts)
+            for j, bb in enumerate(len(tb)):
+                print(j, tb[0], tb[1])
+                pf = self.__spec_fname_postfix(dt, j, mode='uniform')
+                for d in self.config["DATA"]["detectors"]:
+                    fn = path4(self.config, d+"_bin", postfix=pf)
+                    dct[d].append(fn)
+        else: # i.e., uniform_bins == False
+            for j, bb in enumerate(tb):
+                xmm_sec0 = bb[0]
+                xmm_sec1 = bb[1]
+                tt0, tt1 = (xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000
+                pf = self.__spec_fname_postfix(tt0, tt1, mode='t0_t1')
+                for d in self.config["DATA"]["detectors"]:
+                    fn = path4(self.config, d+"_bin", postfix=pf)
+                    dct[d].append(fn)
+        return dct
+
+
+    def __spec_fname_postfix(self, a, b, mode='t0_t1'):
+        """
+        Parameters
+        -----------
+        a, b: float, int  or  float, float
+            Either (bin-length in ks, bin-index) or (t0 in ks, t1 in ks)
+        mode: str
+            Must be in ["t0_t1", "uniform"]
+        """
+        pf = ""
+        if mode == "uniform":
+            pf = str("_%iks_bin%i" % (a,b))
+        elif mode == "t0_t1":
+            tt0, tt1 = a, b
+            if float(tt0).is_integer() and float(tt1).is_integer():
+                pf = str("_%i_%iks" % (tt0, tt1))
+            else:                            
+                pf = str("_%.1f-%.1fks" % (tt0, tt1))
+            # pf = str("_%i_%iks" % (tt0, tt1))
+        else:
+            raise Exception("mode must be in [t0_t1, uniform]")
+        return pf
+
+
     def gen_spec_shell_scripts(self, sas_init=False, margin_sec=1):
         """
         Generate SAS shell script for spectra
@@ -342,19 +406,20 @@ class Obs():
                 ll.debug(str(tbstr))
                 x = spec_script(e, ofn = ofn)
             else:
-                tb = self._time_bins(product="spectra", index=None, margin_sec=margin_sec)
+                tb, uniform_time_bins = self._time_bins(product="spectra", index=None, margin_sec=margin_sec)
                 ll.debug("Time bins: "+str(tb))
-                uniform_time_bins = False
+                # uniform_time_bins = False
                 dts = [x[1] - x[0] for x in tb]
                 if len(dts)>1 and np.std(dts)<1:
-                    dt = np.mean(dts)
-                    uniform_time_bins = True
+                     dt = np.mean(dts)
+                #     uniform_time_bins = True
             
                 if uniform_time_bins:
                     ll.info("Generating "+str(len(tb))+ " (time) bins for EPIC spectra with "+str("5.2f ks binning." % dt))
                     for j, bb in enumerate(len(tb)):
                         xmm_sec0, xmm_sec1 = tb[0], tb[1]
-                        pf = str("_%iks_bin%i" % (dt,j))
+                        # pf = str("_%iks_bin%i" % (dt,j))
+                        pf = self.__spec_fname_postfix(dt, j, mode='uniform')
                         x = spec_script(e, ofn = ofn, t0=xmm_sec0, t1=xmm_sec1, postfix=pf)
                         tmp+=str("echo \"Spectrum bin %i for %4.1f ks binning, i.e., from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (j, dt, (xmm_sec0-self.first_ontime.cxcsec)/1000, (xmm_sec1-self.first_ontime.cxcsec)/1000, pf))
                         tmp+=x
@@ -366,10 +431,7 @@ class Obs():
                         xmm_sec0 = bb[0]
                         xmm_sec1 = bb[1]
                         tt0, tt1 = (xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000
-                        if float(tt0).is_integer() and float(tt1).is_integer():
-                            pf = str("_%i_%iks" % (tt0, tt1))
-                        else:                            
-                            pf = str("_%.1f-%.1fks" % (tt0, tt1))
+                        pf = self.__spec_fname_postfix(tt0, tt1, mode='t0_t1')
                         ll.info("Generating EPIC spectrum "+str(j)+" for "+str(bb)+str(" or %.3f, %.3f sec)" % ((xmm_sec0-self.observation_start.cxcsec)/1000, (xmm_sec1-self.observation_start.cxcsec)/1000))) #str(" from %5.2f to %5.2f ks after exposure start. Postfix will be \"%s\". \"" % (xmm_sec0, xmm_sec1)))
                         ll.info("    name for EPIC spectrum "+str("'%s' with postfix=%s" % (ofn, pf)))
                         print(pf, xmm_sec0, xmm_sec1)
@@ -587,6 +649,7 @@ class Obs():
         Returns
         ---------
         list of (start, stop) in cxcsec for ref_system=='Telescope', or in other specificed format
+        uniform_bins (bool), is True if N equal length bins are used and False otherwise
         """
         ll = logging.getLogger("xmmpy")
 
@@ -596,23 +659,26 @@ class Obs():
         tb = self.config["SPECTRA"]["time_bins"]
         ll.debug("Time bins: "+str(tb))
         obst = []
+        mode = 'none'
         if str(tb).lower() != "none" and str(tb)!="":
             if type(tb) == int:
                 t0, t1 = self.first_ontime - margin_sec*aunits.second, self.last_ontime + margin_sec*aunits.second
                 bins = list([[t0+i*(t1-t0)/tb, t0+(i+1)*(t1-t0)/tb] for i in range(tb)])
                 obst = bins
+                mode = 'uniform'
             elif type(tb) == list:
                 ll.info(str("Generating EPIC spectra using time intervals from config-file (#%i)." % len(tb)))
                 for j, bb in enumerate(tb):
                     xmm_sec0 = self.observation_start.cxcsec + bb[0]*1000.
                     xmm_sec1 = self.observation_start.cxcsec + bb[1]*1000.
                     obst.append([xmm_sec0, xmm_sec1])
+                mode = 'bins'
         else: # no time bins specified
             t0, t1 = self.first_ontime.cxcsec - margin_sec, self.last_ontime.cxcsec + margin_sec
             obst.append((t0, t1))
         ll.debug("Time bins for '%s' are: "+str(obst)+ " in "+str(ref_system)+" time.")
         if ref_system == "Telescope":
-            return obst
+            return obst, mode=='uniform'
         else:
             out = []
             for p in obst:
@@ -629,8 +695,8 @@ class Obs():
                     out.append(tmp1)
                 else:
                     raise Exception("Unknown reference system: "+str(ref_system))
-            return out
-        return None
+            return out, mode=='uniform'
+        return None, None
         
         
 if __name__ == "__main__":

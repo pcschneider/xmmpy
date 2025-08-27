@@ -48,7 +48,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
 
     ff = pyfits.open(image_fn)
     wcs = WCS(ff[0].header, key="L")
-
+    print("Read image", image_fn)
     if fig is not None:
         #print("Using fig")
         if single_ax:
@@ -72,7 +72,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     cbar.set_label("Counts")
     cbar.set_ticks([1,2,3,4,6,10])
     cbar.set_ticklabels(["1","2","3","4","6","10"])
-    
+    print("Region fn", region_fn)
     sx, sy, sr, _ = add_patch(region_fn)
     tlim1 = (sx-r_scaling*sr, sy-r_scaling*sr)
     tlim2 = (sx+r_scaling*sr, sy+r_scaling*sr)        
@@ -96,7 +96,7 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
             tlim2 = (dx+5*dr, dy+5*dr)        
     # else:
         
-
+    print("tlim 000:",tlim1, tlim2)
     #ll = ax.get_xticks()[::3]
     # print(ll)
     # nllx = [str("%i" % (x-ll[len(ll)//2])) for x in ll[::3]]
@@ -109,20 +109,21 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
     cc1 = ttx.transform(tlim2)
     cc1 = ax.transData.inverted().transform(cc1)
     # ax.annotate(ff[0].header["Filter"], xy=(0.2, 0.2), color='white', xycoords="axes fraction")
-    #print("cc",cc0,cc1)
+    print("cc",cc0,cc1)
     ax2 = plt.gca()
     #ll = ax2.get_xticks()[::2]
     #print(ax2.coords)
     #print(dir(ax2.coords["x"]))
-    ##print("XXX",ax2.coords["x"].get_format_unit())
+    #print("XXX",ax2.coords["x"].get_format_unit())
     #ax2.coords["x"].set_ticks(values=uu.Quantity([27000, 29000]))
     tmp = ax2.coords["x"].transform
     #print("YYY", tmp, type(tmp))
     #print(tmp.inverted().transform(np.atleast_2d(np.array((300,300)))))
     ul = tmp.transform(np.atleast_2d(np.array(cc0)))[0]
     lr = tmp.transform(np.atleast_2d(np.array(cc1)))[0]
-    #print("ul, lr", ul, lr)
+    print("ul, lr", ul, lr)
     aa, bb = ul[0], lr[0]
+    print("aa,bb", aa, bb)
     steps =np.linspace(np.ceil(aa/1000), np.floor(bb/1000),4).astype(int) * 1000
     tmp = uu.Quantity([ul[0], lr[0]])
     tmp = uu.Quantity(steps)
