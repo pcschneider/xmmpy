@@ -3,4 +3,4 @@ from .etc import *
 from .scripttools import *
 from .bin import *
 
-pythoncall="/home/majestix/hdd/python/bin/python3.8"
+pythoncall="/home/majestix/hdd/python/bin/python3.12"
