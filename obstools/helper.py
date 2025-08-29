@@ -1,9 +1,67 @@
 import logging
+import os
 import glob
 from regions import PixelRegion
 import regions
 import astropy.io.fits as pyfits
 from astropy import wcs
+
+def identify_longest_exposure(dr, verbose=1):
+    """
+    Get the longest exposure for all detectors in one directory
+
+    Parameters
+    ----------
+    dr : string
+      Directory
+
+    Returns
+    --------
+    dictionary with det:fn-pairs
+    """
+    dct = {}
+    for det in ["EPN", "EMOS1", "EMOS2"]:
+        best_fn = None
+        longest = None
+        gstr = dr+"/*"+det+"*ImagingEvts.ds*"
+        fnames = glob.glob(gstr)
+        if len(fnames) == 0:
+          if verbose>0: print("Cannot find evt-file for ",det, " in ", dr)
+          continue
+        elif len(fnames) == 1:
+           dct[det] = fnames[0]
+        else: # More than one 'ImagingEvts' file
+            for fn in fnames:
+                with pyfits.open(fn) as ff:
+                    if ff[0].header['FILTER'].lower() not in ["closed", "calclosed"]:
+                      if longest is None:
+                         best_fn = fn
+                         longest = ff[1].header['ONTIME']
+                      elif longest is not None and longest < ff[1].header['ONTIME']:
+                         best_fn = fn
+                         longest = ff[1].header['ONTIME']
+            dct[det] = best_fn
+    ret = {}
+    if 'EPN' in dct:
+       ret["pn"] = dct["EPN"]
+    if "EMOS1" in dct:
+       ret["m1"] = dct["EMOS1"]
+    if "EMOS2" in dct:
+       ret["m2"] = dct["EMOS2"]       
+    return ret
+              
+                                          
+def he_lc_from_dr(dr, det='pn'):
+    """det must be in [pn, m1,m2]"""
+    mp = {"pn":"EPN", "m1":"EMOS1", "m2":"EMOS2"}
+    fn = dr+"/"+det+".fits"
+    if os.path.exists(fn):
+       with pyfits.open(fn) as ff:
+          expidstr = ff[0].header["EXPIDSTR"]
+       he_fnames = glob.glob(dr+"/*"+mp[det]+"_"+expidstr+"*ImagingEvt_he_lc.fits")
+       if len(he_fnames) == 1: return he_fnames[0]
+    return None
+   
 
 def ds9_to_physical(fname, evt_fn=None):
   """

@@ -33,7 +33,9 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
         lo, hi = band.split(":")
         e_expression = str(lo)+"-"+str(hi)+"eV"
         image_fn = path4(obs.config, e.det+"_image", postfix=e_expression)
-        if os.path.exists(image_fn) is False: return None
+        if os.path.exists(image_fn) is False: 
+            if verbose>0: print(" No %s file" % image_fn)
+            return None
 
         src_reg_fn = path4(obs.config, "src_reg")
         bkg_reg_fn = path4(obs.config, "bkg_"+e.det+"_reg")
@@ -114,6 +116,7 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
     exposures = obs.exposures.values()
     usable_detectors = obs.config["DATA"]["detectors"]
     if det not in usable_detectors:
+        if verbose>0: print("%s is not among the usable detectors." % det)
         return None
     if len(exposures) > 0:
         mp = {obs.exposures[x].det:x for x in obs.exposures}
@@ -137,7 +140,9 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
                 e.det, e.exp_id = d, None
 
             tmp = one_panel(i, e, band=band, fig=fig) # index, exposure, band, plt.figure
-            if tmp is None: continue
+            if tmp is None: 
+                if verbose>0: print("no panel")
+                continue
             lt, dt = tmp
             i+=1
             print("i:",i)
@@ -154,7 +159,7 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
             else:
                 helca = None
             
-            tb = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
+            tb, uni = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
             try:
                 tb = obs.config["SPECTRA"]["time_bins"]
             except Exception as EE:
@@ -162,14 +167,15 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
                 print("Exception: %s" % EE)
             logger.info("Using time bins: " + str(tb))
             if tb is not None:
-                tb = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
-            print("TB:", tb)
+                tb, uni = obs._time_bins(index=None, product='spectra', ref_system='ks_after_obs_start', margin_sec=1)
+            print("TB:", tb, ";  uniform bins:", uni)
             if tb is not None:
                 for b in tb:
                     if b is not float and b is not int: 
                         if len(b) == 2:
-                            lca.axvline(x=b[0],ls=':')
-                            lca.axvline(x=b[1],ls=':')
+                            if lca is not None:
+                                lca.axvline(x=b[0],ls=':')
+                                lca.axvline(x=b[1],ls=':')
                             if helca is not None:
                                 helca.axvline(x=b[0],ls=':')
                                 helca.axvline(x=b[1],ls=':')
@@ -222,10 +228,12 @@ if __name__ == "__main__":
     with PdfPages(ofn) as pdf:
         for b in obs.config["IMAGES"]["energies"]:
             for d in obs.config["DATA"]["detectors"]:
+                print("Page for det=",d)
                 if verbosity>1: print("Generating pdf for energy band: ",b)
                 fig = page4obs(obs, band=b, verbose=verbosity, det=d)
                 pdf.savefig(fig)  # saves the current figure into a pdf page
                 plt.close()
+            print()
     # plt.close()
     print("\npdf: ",ofn)
     print(" or: ",os.path.relpath(ofn))

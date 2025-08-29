@@ -2,6 +2,7 @@ from pathlib import Path
 import glob
 import os
 from .my_configs import conffile_reader
+from ..obstools import he_lc_from_dr
 
 def band2postfix(b):
     return str(b).replace(":","-")+"eV"
@@ -317,7 +318,10 @@ def path4_ll(config, which="datadir", postfix=None):
             if len(fnames) == 1:
                 return fnames[0]
             else:
+                fn  = he_lc_from_dr(str(path4(config, which="datadir"))+"/odata/", det="pn")
+                return fn
                 raise Exception("More than one high energy light curve found for pn (",gstr,")")
+            
             return lc_fn
     if which == "m1_he_lc":
         import glob
@@ -326,9 +330,9 @@ def path4_ll(config, which="datadir", postfix=None):
         if len(fnames) == 1:
             return fnames[0]
         elif len(fnames) == 0:
-            raise Exception("No high energy light curve found for pn (",gstr,")")
+            raise Exception("No high energy light curve found for m1 (",gstr,")")
         else:
-            print("More than one high energy light curve found for pn (",gstr,")")
+            print("More than one high energy light curve found for m1 (",gstr,")")
             det = config["DATA"]["detectors"][0]
             band = config["LIGHT CURVES"]["energies"][0]
             print("checking light curve:", det, band)
@@ -343,7 +347,9 @@ def path4_ll(config, which="datadir", postfix=None):
             if len(fnames) == 1:
                 return fnames[0]
             else:
-                raise Exception("More than one high energy light curve found for pn (",gstr,")")
+                fn  = he_lc_from_dr(str(path4(config, which="datadir"))+"/odata/", det="m1")
+                return fn
+                raise Exception("More than one high energy light curve found for m1 (",gstr,")")
             return lc_fn
     if which == "m2_he_lc":
         import glob
@@ -352,25 +358,31 @@ def path4_ll(config, which="datadir", postfix=None):
         if len(fnames) == 1:
             return fnames[0]
         elif len(fnames) == 0:
-            raise Exception("No high energy light curve found for pn (",gstr,")")
+            raise Exception("No high energy light curve found for m2 (",gstr,")")
         else:
-            print("More than one high energy light curve found for pn (",gstr,")")
-            det = config["DATA"]["detectors"][0]
-            band = config["LIGHT CURVES"]["energies"][0]
-            print("checking light curve:", det, band)
-            which_str = det+"_crr_lc"
-            print("which str:", which_str, "band:", band)
-            lc_fn = path4(config, which=which_str, postfix=band2postfix(band))
-            from astropy.io import fits as pyfits
-            ff = pyfits.open(lc_fn)
-            exp_str = ff[0].header['EXPIDSTR']
-            gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS2_"+exp_str+"*ImagingEvt_he_lc.fits"
-            fnames = glob.glob(gstr)
-            if len(fnames) == 1:
-                return fnames[0]
-            else:
-                raise Exception("More than one high energy light curve found for pn (",gstr,")")
-            return lc_fn
+            print("More than one high energy light curve found for m2 (",gstr,")")
+            fn  = he_lc_from_dr(str(path4(config, which="datadir"))+"/odata/", det="m2")
+            return fn
+            # det = config["DATA"]["detectors"][0]
+            # band = config["LIGHT CURVES"]["energies"][0]
+            # print("checking light curve:", det, band)
+            # which_str = det+"_crr_lc"
+            # print("which str:", which_str, "band:", band)
+            # lc_fn = path4(config, which=which_str, postfix=band2postfix(band))
+            # from astropy.io import fits as pyfits
+            # ff = pyfits.open(lc_fn)
+            # exp_str = ff[0].header['EXPIDSTR']
+            # gstr_pn = str(path4(config, which="datadir"))+"/odata/*_EMOS2_"+exp_str+"*ImagingEvt_he_lc.fits"
+            # fnames = glob.glob(gstr)
+            # if len(fnames) == 1:
+            #     ff =  pyfits.open(fnames[0])
+            #     if ff[0].header["FILTER"].lower() not in ["closed", "calclosed"]:
+            #         return fnames[0]
+            #     else:
+
+            # else:
+            #     raise Exception("More than one high energy light curve found for m2 (",gstr,")")
+            # return lc_fn
 
 
     

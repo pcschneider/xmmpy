@@ -89,7 +89,7 @@ def scripts(directory=None, config=None, source=None, pythoncall="/home/majestix
         tp = []
         for x in args:
             if x.lower() in possible_data_products: tp.append(x.lower())
-            else: print("Don't know what to do with 'product=", x,"'")
+            else: print("Don't know what to do with 'product=", x,"', possibilities are ",possible_data_products)
         dct = {p: True if p in tp else False for p in possible_data_products}
         if len(dct) == 0: return None
         return dct
