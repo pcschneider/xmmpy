@@ -6,4 +6,4 @@ from .my_configs import *
 from .my_logger import *
 from .my_paths import path4
 from .check_tools import nearest_src, Surrounding
-from .xspec_helper import XMM_Observation_for_xspec
+from .xspec_helper import XMM_Observation_for_xspec,link_pattern,link_based_on_name,photon_percentage_range, fit_and_photon_percentage, untie_epochs, FitProperties
