@@ -595,6 +595,20 @@ class Obs():
             oo.write(r)
         return r
 
+    def gen_overview(self):
+        """
+        Generate the command to build the overview PDF (images, light curves, regions).
+        """
+        ll = logging.getLogger("xmmpy")
+        source_name = self.config["DATA"]["source_name"]
+        conf_fn = str(path4(self.config, which="datadir").joinpath(str(source_name).replace(" ", "_")+"_"+self.config["obsID"]+".conf"))
+        ll.info("Generating overview-PDF command for conf-file="+conf_fn)
+        # xmm_image_pdf.py needs matplotlib/photutils/astropy and is not runnable
+        # under its own (system-python) shebang; xmm_generate_pdf.py forwards to
+        # it via the correct interpreter instead.
+        r = "xmm_generate_pdf.py \""+conf_fn+"\"\n"
+        return r
+
     def gen_evt_shell_scripts(self, sas_init=False):
         from ..scripttools import evt_script
         ll = logging.getLogger("xmmpy")
@@ -615,7 +629,7 @@ class Obs():
         return r
         
     @ofn_support    
-    def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, img=None, sas_init=True):
+    def shell_scripts(self, spec=None, lc=None, evt=None, rgs=None, img=None, overview=None, sas_init=True):
         """
         Generate shell scripts for spectra (if True) and light curves (if lc==True)
         """
@@ -629,6 +643,8 @@ class Obs():
             rgs = self.config["SOURCE PRODUCTS"]["events"]
         if img is None:
             img = self.config["SOURCE PRODUCTS"]["images"]
+        if overview is None:
+            overview = self.config["SOURCE PRODUCTS"]["overview"]
         ll = logging.getLogger("xmmpy")
         ll.info("Generating source products (lc="+str(lc)+", spectra="+str(spec)+", evts="+str(evt)+", rgs="+str(rgs)+", images="+str(img)+").")
         r = "# xmmpy ana script\n\n"
@@ -647,6 +663,8 @@ class Obs():
             r+=self.gen_rgs_shell_scripts()
         if img:
             r+=self.gen_img_shell_scripts()
+        if overview:
+            r+=self.gen_overview()
         return r
     
     def _time_bins(self, index=None, product='spectra', ref_system='Telescope', margin_sec=1):

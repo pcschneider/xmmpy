@@ -73,7 +73,8 @@ SOURCE PRODUCTS:
   light curves : TRUE
   events : TRUE
   rgs : TRUE
-  images : True
+  images : TRUE
+  overview : TRUE
   
 REGIONS:
     src : reg_src.fits 
