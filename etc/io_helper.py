@@ -182,8 +182,8 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
             r0 = float(mm.group(4))
             r1 = float(mm.group(5))
             a = float(mm.group(6))
-            print("x=<%s>, y=<%s>, r=<%s>" % (x, y, r))
-            col_vals["SHAPE"].append("Circle")
+            print("x=<%s>, y=<%s>, r0=<%s>, r1=<%s>, a=<%s>" % (x, y, r0, r1, a))
+            col_vals["SHAPE"].append("Ellipse")
             col_vals["X"].append(x)
             col_vals["Y"].append(y)
             col_vals["R"].append([r0, r1])
@@ -197,7 +197,7 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
             y = float(mm.group(3))
             r0 = float(mm.group(4))
             r1 = float(mm.group(5))
-            print("x=<%s>, y=<%s>, r=<%s>" % (x, y, r))
+            print("x=<%s>, y=<%s>, r0=<%s>, r1=<%s>" % (x, y, r0, r1))
             col_vals["SHAPE"].append("Annulus")
             col_vals["X"].append(x)
             col_vals["Y"].append(y)
@@ -255,20 +255,45 @@ def fits_region_file_writer(pix_region, ofn, overwrite=True, verbose=1):
     Currently only accepts "Circles"
     
     """
-    cols = [pyfits.Column(name="SHAPE", array=["CIRCLE" ], format='16A')]
-    
-    nc = pyfits.Column(name="X",coord_type='RA---TAN', coord_unit = 'deg', array=[pix_region.center.x], format='E')
-    cols.append(nc)
-    
-    nc = pyfits.Column(name="Y",coord_type='DEC--TAN', coord_unit = 'deg', array=[pix_region.center.y], format='E')
-    cols.append(nc)
-    
-    nc = pyfits.Column(name="R", array=[pix_region.radius], format='E')
-    cols.append(nc)
 
+    def _circle_branch(pix_region):
+        cols = [pyfits.Column(name="SHAPE", array=["CIRCLE" ], format='16A')]
+        nc = pyfits.Column(name="X",coord_type='RA---TAN', coord_unit = 'deg', array=[pix_region.center.x], format='E')
+        cols.append(nc)
+        nc = pyfits.Column(name="Y",coord_type='DEC--TAN', coord_unit = 'deg', array=[pix_region.center.y], format='E')
+        cols.append(nc)
+        nc = pyfits.Column(name="R", array=[pix_region.radius], format='E')
+        cols.append(nc)
+        hd = pyfits.BinTableHDU.from_columns(cols)
+        return hd
+    
+    def _annulus_branch(pix_region):
+            cols = [pyfits.Column(name="SHAPE", array=["ANNULUS"], format='16A')]
+            nc = pyfits.Column(name="X",coord_type='RA---TAN', coord_unit = 'deg', array=[pix_region.center.x], format='E')
+            cols.append(nc)
+            nc = pyfits.Column(name="Y",coord_type='DEC--TAN', coord_unit = 'deg', array=[pix_region.center.y], format='E')
+            cols.append(nc)
+            nc = pyfits.Column(name="R", array=[(pix_region.inner_radius, pix_region.outer_radius)], format='2E')
+            cols.append(nc)
+            hd = pyfits.BinTableHDU.from_columns(cols)
+            return hd
+    
+    # print(type(pix_region))
+    # if type(pix_region) == Circle:
+    #     pass
+    # else:
+    #     raise Exception("Region shape "+str(type(pix_region))+" not implemented yet. Aborting...")
+
+    print(dir(pix_region))
+    if "annulus" in pix_region.serialize("ds9"):
+        hd = _annulus_branch(pix_region)
+    elif "circle" in pix_region.serialize("ds9"):
+        hd = _circle_branch(pix_region)
+    else:
+        raise Exception("Region shape "+str(type(pix_region))+" not implemented yet. Aborting...")
+    
     hdu = pyfits.PrimaryHDU()
-
-    hd = pyfits.BinTableHDU.from_columns(cols)
+    
     hd.header["EXTNAME"] = "REGION"
     hd.header["HDUCLAS1"] = "REGION"
     hd.header["MFORM1"] = "X,Y"

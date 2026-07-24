@@ -11,9 +11,9 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
     """
       Check for region in directory and convert supposedly fits-file regions to real fits-files
     """
-    from xmmpy.etc import read_config, path4, fits_region_file_writer
+    from xmmpy.etc import read_config, path4, fits_region_file_writer,fits_multi_region_writer
     from astropy.io import fits as pyfits
-    from regions import CirclePixelRegion, PixCoord
+    from regions import CirclePixelRegion, PixCoord, CircleAnnulusPixelRegion
 
     if os.path.exists(directory) and os.path.isfile(directory):
         try:
@@ -67,8 +67,27 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
                     # print(a,b,c)
                     #Regions.PixRegion
                     regions = [CirclePixelRegion(PixCoord(x=a, y=b), radius=c)]
-                # else:
-                #     print(fn, " ----> Region is not a circle, aborting...")
+                elif "annulus" in l.lower():
+                    print(fn, " ----> Region is not a circle, aborting...")
+                    x = l.strip()[8:-1]
+                    a,b,c,d = x.split(",")
+                    a,b = float(a), float(b)
+                    if "\"" in c:
+                        c = float(c[:-1])/3600
+                    elif "\'" in c:
+                        c = float(c[:-1])/60
+                    else:
+                        c = float(c)
+                    print("c",c)
+                    if "\"" in d:
+                        d = float(d[:-1])/3600
+                    elif "\'" in d:
+                        d = float(d[:-1])/60
+                    else:
+                        d = float(d)
+                    print("d",d)                    
+                    regions = [CircleAnnulusPixelRegion(PixCoord(x=a, y=b), inner_radius=c, outer_radius=d)]
+
             # print("regions:",regions)
             if len(regions)>1:
                 raise Exception("More than one region in "+fn+"("+str(len(regions))+")")

@@ -38,6 +38,12 @@ def ax4image_and_sourceregion(image_fn, region_fn, bkg_region_fn=None, r_scaling
                 x, y, r = rff[1].data[0][1], rff[1].data[0][2], rff[1].data[0][3]
                 pth = Circle((x,y), r, facecolor='none', edgecolor='r', transform=ax.get_transform('world')) 
                 ax.add_patch(pth)
+            elif rff[1].data[0][0].lower() == "annulus":
+                x, y, (r0, r1) = rff[1].data[0][1], rff[1].data[0][2], rff[1].data[0][3]
+                for r in (r0, r1):
+                    print("r: ",r)
+                    pth = Circle((x,y), r, facecolor='none', edgecolor='r', transform=ax.get_transform('world')) 
+                    ax.add_patch(pth)
             else:            
                 raise Exception("Only circles allowed at the moment.")
         return x,y,r, pth
@@ -279,6 +285,9 @@ def ax4lightcurve(lc_fn, fig=None, t0=None, subplot_arg=(1,1,1), yscale='linear'
     if exists(lc_fn) is False:
         print("File does not exist: %s" % lc_fn)
         return None
+    
+        
+
     if fig is None:
         fig = plt.figure()
     # lc_fn = str(lc_fn).replace("src", "crr")
@@ -294,7 +303,7 @@ def ax4lightcurve(lc_fn, fig=None, t0=None, subplot_arg=(1,1,1), yscale='linear'
     ax.plot((x-t0)/1e3, len(x)*[ymedian], color='0.5')
     ax.fill_between((x-t0)/1e3, len(x)*[ymedian-ystd], len(x)*[ymedian+ystd], color='0.5', alpha=0.1)
     ax.errorbar((x-t0)/1e3, y, yerr=yerr, alpha=0.3, color='b')
-    ax.plot((x-t0)/1e3, y, color='b')
+    ax.plot((x-t0)/1e3, y, color='b', label='src')
 
     ax.set_xlabel("Time (ks)")
     ax.set_ylabel("Rate (cts/s)")
@@ -302,6 +311,21 @@ def ax4lightcurve(lc_fn, fig=None, t0=None, subplot_arg=(1,1,1), yscale='linear'
     ax.set_yscale(yscale)
     plt.annotate("Start time: %i" % t0, xy=(0.02, -0.37), xycoords="axes fraction")
     plt.annotate("Median: %5.2f, mean: %5.2f (cts/ks)" % (1000* ymedian, 1000* ymean), xy=(0.02, -0.3), xycoords="axes fraction")
+    
+    lc_fn = str(lc_fn)
+    if "crr" in lc_fn:
+        bkg_fn = str(lc_fn).replace("crr", "bkg")
+        if exists(bkg_fn):
+            ff = pyfits.open(bkg_fn)
+            x, yb = ff[1].data["TIME"], ff[1].data["RATE"]
+            yb_median = np.median(yb)
+
+            ax.plot((x-t0)/1e3, yb * ymedian/yb_median * 0.8, color='m', alpha=0.3, label='bkg (scaled)')
+            ax.legend()
+            # ax.errorbar((x-t0)/1e3, y, alpha=0.3, color='r')
+
+    
+    
     return ax
 
 

@@ -389,20 +389,19 @@ def value_tuple():
     pass
 
 
-def value_str(value, error):
+def value_str(value, error, default_fmt="%5.2f"):
     """
     Format a value with asymmetric error bars as a LaTeX string.
 
     Returns plain ``"V.VV"`` if `error` is NaN or both bounds are zero,
     otherwise ``"V.VV$^{+hi}_{-lo}$"``.
     """
-    out = str("%5.2f" % value)
+    out = str(default_fmt % value)
     if type(error) == float and np.isnan(error): return out
-    
     error_tuple = error[1:-1].split(",")
-    # print(error_tuple)
     lo, hi = float(error_tuple[0]), float(error_tuple[1])
-    out+=str("$^{+%5.2f}_{-%5.2f}$" % (hi-value, value-lo))
+    tmp = "$^{+"+default_fmt+"}_{-"+default_fmt+"}$"
+    out+=str(tmp % (hi-value, value-lo))
     if lo == 0.0 and hi == 0.0:
         out = str("%5.2f" % value)
     return out.replace(" ","")
@@ -415,44 +414,108 @@ def pIdx4link(link):
     # print(nr)
     return int(nr)
 
-def tex4params(ifn, params=None, dg_mapper=None):
+def range4param(df, param_name):
+    """Return the min/max values of a parameter."""
+    return df[df["parameter_name"] == param_name]["value"].min(), df[df["parameter_name"] == param_name]["value"].max()
+
+def range4param_idx(df, param_name):
+    """Return the min/max values of a parameter."""
+    return df[df["parameter_index"] == param_name]["value"].min(), df[df["parameter_index"] == param_name]["value"].max()
+
+
+def tex4params(ifn, params=None, dg_mapper=None, verbose=1):
     """
+    Generate LaTeX table rows from a write_model CSV file.
+
+    One row per data group is produced: the first row is a header with parameter
+    names, followed by one data row per group.
+
     Parameters
     -----------
     ifn : str
-        Filename (will be csv-format)
-    params : list or None
-        List of parameters to display, if None, all variable parameters are displayed
+        Path to a CSV file written by FitProperties.write() / write_model.
+    params : list of str or None
+        Parameter names (strings) to include as columns, taken from the
+        ``parameter_name`` column of the CSV.  The same name may appear
+        multiple times if the model has several components with that name
+        (e.g. ``"kT"`` in a 3T APEC model) — all matching indices are
+        included in order.  Integers (parameter indices) are not supported;
+        always pass names.  If None, all unique parameter indices present in
+        the first data group are included.
     dg_mapper : dict or None
-        Dictionary to map data groups to names, if None, data group numbers are used
+        Maps data-group integers to the label printed in the first column,
+        e.g. ``{1: "0764100501"}``.  Unmapped groups fall back to
+        ``"Data group N"``.  If None, all groups use the fallback label.
+    verbose : int
+        Verbosity level (default 1).
+
+    Returns
+    -------
+    list of str
+        LaTeX row strings.  Element 0 is the header row (column names);
+        subsequent elements are one data row per data group.
+
+    Examples
+    --------
+    # All free parameters, data-group number as row label:
+    rows = tex4params("0764100501_spec_params_3T_frozen.csv")
+
+    # Select specific parameters, map group 1 to an ObsID string:
+    rows = tex4params(
+        "0764100501_spec_params_3T_frozen.csv",
+        params=["lg10Flux", "kT", "kT_4", "kT_5"],
+        dg_mapper={1: "0764100501"},
+    )
+    print("\\n".join(rows))
     """
-    df = pd.read_csv(ifn, delimiter=',')
+    def _select_fmt(lo, hi, margin=1):
+        log_lo_floor = int(np.floor(np.log10(abs(lo)))) + margin
+        if log_lo_floor < 0:
+            log_lo_floor*=-1
+            return "%" + str(log_lo_floor+3) + "."+str(log_lo_floor+1)+"f"
+        return "%" + str(log_lo_floor+2) + "."+str(1+margin)+"f"
+
+
+    if verbose>1: print("Reading file", ifn)
+    df = pd.read_csv(ifn, delimiter=',', comment='#')
     df.drop_duplicates(inplace=True )
     rows = []
+    bold = "\\textbf{"
+    nobold = "{"
+    fett = nobold
     dgrps = np.unique(df['data_group'])
     top_row, pop_top = " & ", True
+    param_names = {}
     for dg in dgrps:
         gi = np.where(df["data_group"] == dg)[0]
         if len(gi) == 0: continue
         if dg_mapper is not None:
             if dg in dg_mapper.keys():
-                row = "\\textbf{%s} & " % dg_mapper[dg]
+                row = fett +"%s} & " % dg_mapper[dg]
             else:
-                row = "\\textbf{Data group %i} & " % dg
+                row = fett+"Data group %i} & " % dg
         else:
-            row = "\\textbf{Data group %i} & " % dg
+            row = fett+"Data group %i} & " % dg
         # row = " & "
         if params is None:
-            param_indices = np.unique(df["parameter_index"].iloc[gi])
+            param_indices = np.unique(df["parameter_index"].iloc[gi])    
+            params = [df["parameter_name"].iloc[gi[np.where(df["parameter_index"] == p)[0]]].values for p in param_indices]
         elif type(params) == list:
             param_indices = []
             if all(type(p)==str for p in params):
                 for p in params:
                     pi = np.where(df["parameter_name"].iloc[gi] == p)[0]
-                    print(pi)
                     tmp = df["parameter_index"].iloc[gi[pi]]
-                    print(tmp)
+                    if verbose>1:print("index for ", p, " in data group", dg, ":", pi, " tmp:", tmp)
                     for t in tmp: param_indices.append(t)
+
+        ranges = {} # key: param_index, value: (lo, hi)
+        for p in param_indices:
+                name = df["parameter_name"].iloc[np.where(df["parameter_index"] == p)[0]].values[0]
+                param_names[p] =name
+        for p in param_indices:
+            ranges[p] = range4param_idx(df, p)
+            print("range for param", param_names[p], "/", p," in data group", dg, ":", ranges[p])
 
         for p in param_indices:
             pi = np.where(df["parameter_index"] == p)[0]
@@ -460,14 +523,16 @@ def tex4params(ifn, params=None, dg_mapper=None):
                 print("Parameter index %i not found in data group %i" % (p, dg))
                 continue
             if pop_top:
-                print("p", p)
+                if verbose>1: print("pop_top, for param_index p", p)
                 top_row += df["parameter_name"].iloc[pi[0]] + " & "
 
             # row += str(p) + " & "
             # row += " & "
+            fmt= _select_fmt(*ranges[p])
+            print(p, param_names[p], fmt)
             v = df["value"].iloc[pi[0]]
             e = df["error"].iloc[pi[0]]
-            row += value_str(v, e) + " & "
+            row += value_str(v, e, default_fmt=fmt) + " & "
         if pop_top:
             pop_top = False
             top_row = top_row[:-3] + "\\\\\n\\hline"
@@ -500,7 +565,7 @@ class FitProperties:
         self.parname  = []
         self.link     = []
         self.frozen   = []
-        self.value    = []
+        self.values    = []
         self.error    = []
         # per-data-group
         self.grp_ids    = []
@@ -518,6 +583,78 @@ class FitProperties:
         self.specnums   = []   # spectrum number within its data group (1-based)
         self.filenames  = []
         self.ignored    = []
+        # flux command output
+        self.flux_emin  = None   # lower energy bound used for flux calculation (keV)
+        self.flux_emax  = None   # upper energy bound
+        self.flux       = {}     # {grp_id: (phot_flux, phot_err, ener_flux, ener_err)}
+
+    def __getitem__(self, key):
+        """
+        Retrieve parameter records by name and optional data group.
+
+        Key forms
+        ---------
+        fp["kT"]          – all records whose parameter_name is "kT"
+        fp["kT", 1]       – records named "kT" in data group 1
+        fp[("kT", 1)]     – same
+
+        Returns
+        -------
+        list of dict, each with keys:
+            paridx, datagrp, compidx, compname, parname,
+            link, frozen, value, error
+        Raises KeyError when no match is found.
+        """
+        if isinstance(key, tuple):
+            name, grp = key
+        else:
+            name, grp = key, None
+        
+        results = [
+            dict(paridx=pi, datagrp=dg, compidx=ci, compname=cn,
+                 parname=pn, link=lk, frozen=fr, value=va, error=er)
+            for pi, dg, ci, cn, pn, lk, fr, va, er in zip(
+                self.paridx, self.datagrp, self.compidx, self.compname,
+                self.parname, self.link, self.frozen, self.values, self.error)
+            if pn == name and (grp is None or dg == grp)
+        ]
+
+        if not results:
+            raise KeyError(
+                "No parameter %r found%s" % (name, "" if grp is None else " in data group %i" % grp))
+        return results
+
+    def value(self, key, grp=None):
+        """
+        Return parameter value(s) by name and optional data group.
+
+        Mirrors the ``__getitem__`` call signature but returns only the
+        best-fit value float(s) instead of the full record dicts.
+
+        Parameters
+        ----------
+        key : str or tuple (name, grp)
+            Parameter name, or a ``(name, grp)`` tuple.
+        grp : int or None
+            Data group (1-based).  Ignored when *key* is already a tuple.
+
+        Returns
+        -------
+        list of float
+            One entry per matching parameter record (e.g. three entries for
+            ``kT`` in a 3T model).  Raises ``KeyError`` when nothing matches.
+
+        Examples
+        --------
+        fp.value("lg10Flux")        # → [float]
+        fp.value("kT", 1)           # → [0.2, 0.6, 1.0]  (three apec components)
+        fp.value(("kT", 1))         # → same
+        """
+        if isinstance(key, tuple):
+            name, grp = key
+        else:
+            name = key
+        return [r["value"] for r in self[name, grp]]
 
     @staticmethod
     def calc_errors(errors=True, error_delta=2.706):
@@ -565,7 +702,7 @@ class FitProperties:
             xspec.Fit.error(es)
 
     @classmethod
-    def collect(cls, errors=False, error_delta=2.706):
+    def collect(cls, errors=False, error_delta=2.706, flux_range=(0.2,2.4)):
         """
         Calculate errors (if requested) and snapshot the current xspec model state.
 
@@ -575,6 +712,8 @@ class FitProperties:
             Passed to calc_errors.
         error_delta : float
             Passed to calc_errors.
+        flux_range : tuple
+            Energy limits for flux calculation (keV).
 
         Returns
         -------
@@ -603,16 +742,19 @@ class FitProperties:
                     fp.parname.append(pn)
                     fp.link.append(str(param.link))
                     fp.frozen.append(bool(param.frozen))
-                    fp.value.append(param.values[0])
+                    fp.values.append(param.values[0])
                     fp.error.append(param.error)
                     idx += 1
                     comp_idx += 1
 
-        spec_counts = {}
+        spec_counts   = {}
+        first_spec_idx = {}   # {grp: first AllData 1-based index for that group}
         for i in range(1, xspec.AllData.nSpectra + 1):
             spec     = xspec.AllData(i)
             grp      = spec.dataGroup
             spec_counts[grp] = spec_counts.get(grp, 0) + 1
+            if grp not in first_spec_idx:
+                first_spec_idx[grp] = i
             r        = spec.rate
             exposure = spec.exposure
             print("spectrum %i (group %i/%i) rates %s  exposure %s" % (
@@ -631,6 +773,17 @@ class FitProperties:
         fp.dof        = xspec.Fit.dof
         fp.statmethod = xspec.Fit.statMethod
         fp.expression = xspec.AllModels(1).expression
+
+        # flux: stored in Spectrum objects (not Model objects) when spectra are loaded.
+        # Tuple layout: (erg_val, erg_lo, erg_hi, phot_val, phot_lo, phot_hi) per model.
+        fp.flux_emin = flux_range[0]
+        fp.flux_emax = flux_range[1]
+        xspec.AllModels.calcFlux("%g %g" % flux_range)
+        for grp_id, spec_i in sorted(first_spec_idx.items()):
+            fv = xspec.AllData(spec_i).flux   # 6-tuple per model
+            fp.flux[grp_id] = (fv[3], fv[4], fv[5], fv[0], fv[1], fv[2])
+            # stored as (phot_val, phot_lo, phot_hi, erg_val, erg_lo, erg_hi)
+
         return fp
 
     def adapt(self, ifn=None):
@@ -674,7 +827,7 @@ class FitProperties:
         
         # Adapt parameters
         for grp, par_idx, val, lnk, frz in zip(
-                self.datagrp, self.paridx, self.value, self.link, self.frozen):
+                self.datagrp, self.paridx, self.values, self.link, self.frozen):
             start = xspec.AllModels(grp).startParIndex
             param = xspec.AllModels(grp)(par_idx - start + 1)
             try:
@@ -822,6 +975,19 @@ class FitProperties:
                 if m:
                     key = (int(m.group(1)), 1)
                     rates.setdefault(key, {"datagrp": key[0], "specnum": 1})["exposure"] = float(m.group(2))
+                    continue
+                # flux energy range header
+                m = re.match(r'# flux energy range: ([\d.eE+-]+) ([\d.eE+-]+) keV', line)
+                if m:
+                    fit["flux_emin"] = float(m.group(1))
+                    fit["flux_emax"] = float(m.group(2))
+                    continue
+                # per-group flux values
+                m = re.match(r'# data group (\d+), flux \([^)]+\): \(([^)]+)\)', line)
+                if m:
+                    grp = int(m.group(1))
+                    vals = [float(v.strip()) for v in m.group(2).split(',')]
+                    fit.setdefault("flux", {})[grp] = tuple(vals)
 
         rates_list = [rates[k] for k in sorted(rates)] if rates else None
         return dict(params=df, fit=fit or None, rates=rates_list)
@@ -851,6 +1017,8 @@ class FitProperties:
                 dof       =phdr.get("FITDOF"),
                 statmethod=phdr.get("STATMETH"),
                 expression=phdr.get("MODELEXP"),
+                flux_emin =phdr.get("FLUXEMIN"),
+                flux_emax =phdr.get("FLUXEMAX"),
             )
 
             try:
@@ -881,15 +1049,21 @@ class FitProperties:
             try:
                 rt = hdul["RATES"].data
                 rates = [dict(
-                    datagrp  =int(  _col(rt, "DATAGRP",    0)   [i]),
-                    specnum  =int(  _col(rt, "SPECNUM",    1)   [i]),
-                    filename =str(  _col(rt, "FILENAME",   "")  [i]).strip(),
-                    ignored  =str(  _col(rt, "IGNORED",    "")  [i]).strip(),
-                    exposure =float(_col(rt, "EXPOSURE",   nan) [i]),
-                    rate_net =float(_col(rt, "RATE_NET",   nan) [i]),
-                    rate_err =float(_col(rt, "RATE_ERR",   nan) [i]),
-                    rate_gross=float(_col(rt, "RATE_GROSS", nan)[i]),
-                    rate_pred =float(_col(rt, "RATE_PRED",  nan)[i]),
+                    datagrp      =int(  _col(rt, "DATAGRP",       0)   [i]),
+                    specnum      =int(  _col(rt, "SPECNUM",       1)   [i]),
+                    filename     =str(  _col(rt, "FILENAME",      "")  [i]).strip(),
+                    ignored      =str(  _col(rt, "IGNORED",       "")  [i]).strip(),
+                    exposure     =float(_col(rt, "EXPOSURE",      nan) [i]),
+                    rate_net     =float(_col(rt, "RATE_NET",      nan) [i]),
+                    rate_err     =float(_col(rt, "RATE_ERR",      nan) [i]),
+                    rate_gross   =float(_col(rt, "RATE_GROSS",    nan) [i]),
+                    rate_pred    =float(_col(rt, "RATE_PRED",     nan) [i]),
+                    flux_phot   =float(_col(rt, "FLUX_PHOT",    nan) [i]),
+                    flux_phot_lo=float(_col(rt, "FLUX_PHOT_LO", nan) [i]),
+                    flux_phot_hi=float(_col(rt, "FLUX_PHOT_HI", nan) [i]),
+                    flux_ener   =float(_col(rt, "FLUX_ENER",    nan) [i]),
+                    flux_ener_lo=float(_col(rt, "FLUX_ENER_LO", nan) [i]),
+                    flux_ener_hi=float(_col(rt, "FLUX_ENER_HI", nan) [i]),
                 ) for i in range(len(rt))]
             except KeyError:
                 rates = []
@@ -931,7 +1105,7 @@ class FitProperties:
         fp.parname  = df["parameter_name"].tolist()
         fp.link     = df["link"].tolist()
         fp.frozen   = df["frozen"].tolist()
-        fp.value    = df["value"].tolist()
+        fp.values    = df["value"].tolist()
         fp.error    = df["error"].tolist()
 
         fit = data["fit"]
@@ -940,7 +1114,11 @@ class FitProperties:
             fp.dof        = fit.get("dof")
             fp.statmethod = fit.get("statmethod")
             fp.expression = fit.get("expression")
+            fp.flux_emin  = fit.get("flux_emin")
+            fp.flux_emax  = fit.get("flux_emax")
+            fp.flux       = fit.get("flux", {})
 
+        seen_grps = set()
         for r in (data["rates"] or []):
             fp.grp_ids.append(r["datagrp"])
             fp.specnums.append(r.get("specnum", 1))
@@ -951,6 +1129,12 @@ class FitProperties:
             fp.rate_err.append(r["rate_err"])
             fp.rate_gross.append(r["rate_gross"])
             fp.rate_pred.append(r["rate_pred"])
+            # reconstruct per-group flux from FITS RATES columns (first spectrum per group wins)
+            grp = r["datagrp"]
+            if grp not in seen_grps and "flux_phot" in r:
+                seen_grps.add(grp)
+                fp.flux[grp] = (r["flux_phot"], r["flux_phot_lo"], r["flux_phot_hi"],
+                                r["flux_ener"], r["flux_ener_lo"], r["flux_ener_hi"])
 
         return fp
 
@@ -1014,8 +1198,20 @@ class FitProperties:
                     ign_str))
             print()
 
+        flux_dict = data.get("fit", {}) or {}
+        stored_flux = flux_dict.get("flux", {})
+        if stored_flux:
+            emin = flux_dict.get("flux_emin", "?")
+            emax = flux_dict.get("flux_emax", "?")
+            print("Flux (%s-%s keV):" % (emin, emax))
+            for grp, fv in sorted(stored_flux.items()):
+                # fv = (phot_val, phot_lo, phot_hi, erg_val, erg_lo, erg_hi)
+                print("  group %i: phot=%.3e (%.3e-%.3e) ph/cm2/s  erg=%.3e (%.3e-%.3e) erg/cm2/s" % (
+                    grp, fv[0], fv[1], fv[2], fv[3], fv[4], fv[5]))
+            print()
+
     @classmethod
-    def write(cls, ofn, errors=False, error_delta=2.706):
+    def write(cls, ofn, errors=False, error_delta=2.706, flux_range=(0.2, 2.4)):
         """
         Collect the current xspec model state and write it to ``ofn``.
 
@@ -1030,8 +1226,10 @@ class FitProperties:
             Passed to collect / calc_errors.
         error_delta : float
             Passed to collect / calc_errors.
+        flux_range : tuple of (float, float)
+            Energy range in keV for the xspec flux command (default 0.2–2.4 keV).
         """
-        fp = cls.collect(errors, error_delta)
+        fp = cls.collect(errors, error_delta, flux_range=flux_range)
         if ofn.lower().endswith(('.fits', '.fit')):
             fp._write_fits(ofn)
         elif ofn.lower().endswith('.csv'):
@@ -1049,7 +1247,7 @@ class FitProperties:
             "parameter_name":  self.parname,
             "link":            self.link,
             "frozen":          self.frozen,
-            "value":           self.value,
+            "value":           self.values,
             "error":           self.error,
         })
         df.to_csv(ofn, index=False)
@@ -1064,12 +1262,20 @@ class FitProperties:
                 oo.write("# data group %i, spectrum %i, rates (bkg subtracted, net uncertainty, gross rate, predicted): %s\n" % (grp, snum, str(r)))
                 oo.write("# data group %i, spectrum %i, exposure: %s, counts (bkg subtracted, net uncertainty, gross rate, predicted): %s \n" % (
                     grp, snum, str(self.exposure[i]), str([ri * self.exposure[i] for ri in r])))
+            if self.flux:
+                oo.write("# flux energy range: %g %g keV\n" % (self.flux_emin, self.flux_emax))
+                for grp, fv in sorted(self.flux.items()):
+                    # fv = (phot_val, phot_lo, phot_hi, erg_val, erg_lo, erg_hi)
+                    oo.write("# data group %i, flux (%g-%g keV, phot (value, lo, hi), erg (value, lo, hi)): (%g, %g, %g, %g, %g, %g)\n" % (
+                        grp, self.flux_emin, self.flux_emax,
+                        fv[0], fv[1], fv[2], fv[3], fv[4], fv[5]))
 
     def _write_fits(self, ofn):
         """
         Output extensions
         -----------------
-        PRIMARY   header keywords: FITSTAT, FITDOF, STATMETH, MODELEXP
+        PRIMARY   header keywords: FITSTAT, FITDOF, STATMETH, MODELEXP,
+                                   FLUXEMIN, FLUXEMAX
         PARAMS    BinTable – one row per model parameter:
                       PARIDX     (I)  global parameter index
                       DATAGRP    (I)  data group (1-based)
@@ -1083,15 +1289,21 @@ class FitProperties:
                       ERR_HI     (D)  upper confidence bound (absolute)
                       ERR_FLAGS  (A)  xspec error flags string
         RATES     BinTable – one row per loaded spectrum:
-                      DATAGRP    (I)  source data group (1-based)
-                      SPECNUM    (I)  spectrum number within data group (1-based)
-                      FILENAME   (A)  spectrum filename
-                      IGNORED    (A)  xspec ignoredString for this spectrum
-                      EXPOSURE   (D)  exposure time (s)
-                      RATE_NET   (D)  background-subtracted net count rate
-                      RATE_ERR   (D)  net rate uncertainty
-                      RATE_GROSS (D)  gross count rate
-                      RATE_PRED  (D)  model-predicted count rate
+                      DATAGRP       (I)  source data group (1-based)
+                      SPECNUM       (I)  spectrum number within data group (1-based)
+                      FILENAME      (A)  spectrum filename
+                      IGNORED       (A)  xspec ignoredString for this spectrum
+                      EXPOSURE      (D)  exposure time (s)
+                      RATE_NET      (D)  background-subtracted net count rate
+                      RATE_ERR      (D)  net rate uncertainty
+                      RATE_GROSS    (D)  gross count rate
+                      RATE_PRED     (D)  model-predicted count rate
+                      FLUX_PHOT     (D)  photon flux (ph/cm²/s) over FLUXEMIN–FLUXEMAX
+                      FLUX_PHOT_LO  (D)  lower 1-sigma bound on photon flux
+                      FLUX_PHOT_HI  (D)  upper 1-sigma bound on photon flux
+                      FLUX_ENER     (D)  energy flux (erg/cm²/s) over FLUXEMIN–FLUXEMAX
+                      FLUX_ENER_LO  (D)  lower 1-sigma bound on energy flux
+                      FLUX_ENER_HI  (D)  upper 1-sigma bound on energy flux
         """
         from astropy.io import fits as pyfits
 
@@ -1112,25 +1324,41 @@ class FitProperties:
             pyfits.Column(name="PARNAME",   format=f"{max_pname}A", array=np.array(self.parname)),
             pyfits.Column(name="LINK",      format=f"{max_link}A",  array=np.array(self.link)),
             pyfits.Column(name="FROZEN",    format="L",             array=np.array(self.frozen)),
-            pyfits.Column(name="VALUE",     format="D",             array=np.array(self.value)),
+            pyfits.Column(name="VALUE",     format="D",             array=np.array(self.values)),
             pyfits.Column(name="ERR_LO",    format="D",             array=np.array(err_lo)),
             pyfits.Column(name="ERR_HI",    format="D",             array=np.array(err_hi)),
             pyfits.Column(name="ERR_FLAGS", format=f"{max_flags}A", array=np.array(err_flags)),
         ])
         params_hdu.name = "PARAMS"
 
+        nan = float("nan")
+        _fnan = (nan,) * 6
+        # fv layout: (phot_val, phot_lo, phot_hi, erg_val, erg_lo, erg_hi)
+        flux_phot      = [self.flux.get(grp, _fnan)[0] for grp in self.grp_ids]
+        flux_phot_lo   = [self.flux.get(grp, _fnan)[1] for grp in self.grp_ids]
+        flux_phot_hi   = [self.flux.get(grp, _fnan)[2] for grp in self.grp_ids]
+        flux_ener      = [self.flux.get(grp, _fnan)[3] for grp in self.grp_ids]
+        flux_ener_lo   = [self.flux.get(grp, _fnan)[4] for grp in self.grp_ids]
+        flux_ener_hi   = [self.flux.get(grp, _fnan)[5] for grp in self.grp_ids]
+
         max_fname = max((len(s) for s in self.filenames), default=1)
         max_ign   = max((len(s) for s in self.ignored),   default=1)
         rates_hdu = pyfits.BinTableHDU.from_columns([
-            pyfits.Column(name="DATAGRP",    format="I",             array=np.array(self.grp_ids,   dtype=np.int16)),
-            pyfits.Column(name="SPECNUM",    format="I",             array=np.array(self.specnums,  dtype=np.int16)),
-            pyfits.Column(name="FILENAME",   format=f"{max_fname}A", array=np.array(self.filenames)),
-            pyfits.Column(name="IGNORED",    format=f"{max_ign}A",   array=np.array(self.ignored)),
-            pyfits.Column(name="EXPOSURE",   format="D",             array=np.array(self.exposure)),
-            pyfits.Column(name="RATE_NET",   format="D",             array=np.array(self.rate_net)),
-            pyfits.Column(name="RATE_ERR",   format="D",             array=np.array(self.rate_err)),
-            pyfits.Column(name="RATE_GROSS", format="D",             array=np.array(self.rate_gross)),
-            pyfits.Column(name="RATE_PRED",  format="D",             array=np.array(self.rate_pred)),
+            pyfits.Column(name="DATAGRP",      format="I",             array=np.array(self.grp_ids,   dtype=np.int16)),
+            pyfits.Column(name="SPECNUM",      format="I",             array=np.array(self.specnums,  dtype=np.int16)),
+            pyfits.Column(name="FILENAME",     format=f"{max_fname}A", array=np.array(self.filenames)),
+            pyfits.Column(name="IGNORED",      format=f"{max_ign}A",   array=np.array(self.ignored)),
+            pyfits.Column(name="EXPOSURE",     format="D",             array=np.array(self.exposure)),
+            pyfits.Column(name="RATE_NET",     format="D",             array=np.array(self.rate_net)),
+            pyfits.Column(name="RATE_ERR",     format="D",             array=np.array(self.rate_err)),
+            pyfits.Column(name="RATE_GROSS",   format="D",             array=np.array(self.rate_gross)),
+            pyfits.Column(name="RATE_PRED",    format="D",             array=np.array(self.rate_pred)),
+            pyfits.Column(name="FLUX_PHOT",    format="D",             array=np.array(flux_phot)),
+            pyfits.Column(name="FLUX_PHOT_LO", format="D",             array=np.array(flux_phot_lo)),
+            pyfits.Column(name="FLUX_PHOT_HI", format="D",             array=np.array(flux_phot_hi)),
+            pyfits.Column(name="FLUX_ENER",    format="D",             array=np.array(flux_ener)),
+            pyfits.Column(name="FLUX_ENER_LO", format="D",             array=np.array(flux_ener_lo)),
+            pyfits.Column(name="FLUX_ENER_HI", format="D",             array=np.array(flux_ener_hi)),
         ])
         rates_hdu.name = "RATES"
 
@@ -1139,6 +1367,10 @@ class FitProperties:
         primary_hdu.header["FITDOF"]   = (self.dof,              "degrees of freedom")
         primary_hdu.header["STATMETH"] = (self.statmethod,       "fit statistic method")
         primary_hdu.header["MODELEXP"] = (self.expression or "", "xspec model expression")
+        primary_hdu.header["FLUXEMIN"] = (self.flux_emin if self.flux_emin is not None else nan,
+                                          "flux lower energy bound (keV)")
+        primary_hdu.header["FLUXEMAX"] = (self.flux_emax if self.flux_emax is not None else nan,
+                                          "flux upper energy bound (keV)")
 
         hdul = pyfits.HDUList([primary_hdu, params_hdu, rates_hdu])
         hdul.writeto(ofn, overwrite=True)

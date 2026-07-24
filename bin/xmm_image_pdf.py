@@ -6,7 +6,7 @@ import glob
 from xmmpy.qc import ax4image_and_sourceregion, ax4lightcurve
 from xmmpy.etc import path4
 from xmmpy import Obs
-from photutils.aperture import aperture_photometry, SkyCircularAperture
+from photutils.aperture import aperture_photometry, SkyCircularAperture,SkyCircularAnnulus
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 from astropy.table import Table
@@ -56,6 +56,7 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
         if bkg_reg_fn and os.path.exists(bkg_reg_fn):    
             with pyfits.open(bkg_reg_fn) as rff:
                 bx, by, br = rff[1].data["X"][0], rff[1].data["Y"][0], rff[1].data["R"][0]
+                bshape = rff[1].data["SHAPE"][0]
             if verbose>2: print(" bkg-reg:", bx,by, br)
         else:
             if verbose>2: print()   
@@ -84,10 +85,18 @@ def page4obs(obs, band=None, conf_file=None, det='pn', verbose=10):
                 sky = wcs.wcs_pix2world(tmp[0], tmp[1], 1)
                 if verbose>3: print(tmp, sky)
                 coord = SkyCoord(sky[0], sky[1], unit=(u.degree, u.degree))
-                ap_src = SkyCircularAperture(coord, r=br/20*u.arcsec)  
-                bkg_phot = aperture_photometry(ff[0].data, ap_src, wcs=wcs)
-                if verbose>2: print("bkg-phot", bkg_phot)
-                net_cts = src_phot["aperture_sum"] - (sr/br)**2 * bkg_phot["aperture_sum"]
+                print("background shape", bshape)
+                if bshape.lower() == "circle":
+                    ap_src = SkyCircularAperture(coord, r=br/20*u.arcsec)  
+                    bkg_phot = aperture_photometry(ff[0].data, ap_src, wcs=wcs)
+                    if verbose>2: print("bkg-phot", bkg_phot)
+                    net_cts = src_phot["aperture_sum"] - (sr/br)**2 * bkg_phot["aperture_sum"]
+                elif bshape.lower() == "annulus":
+                    ap_src = SkyCircularAnnulus(coord, r_in=br[0]/20*u.arcsec, r_out=br[1]/20*u.arcsec)  
+                    bkg_phot = aperture_photometry(ff[0].data, ap_src, wcs=wcs)
+                    if verbose>2: print("bkg-phot", bkg_phot)
+                    bkg_equivalent_radius = (br[1]**2 - br[0]**2)**0.5
+                    net_cts = src_phot["aperture_sum"] - (sr/bkg_equivalent_radius)**2 * bkg_phot["aperture_sum"]
             else:
                 net_cts = 0
 

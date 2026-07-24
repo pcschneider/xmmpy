@@ -7,6 +7,20 @@ from ..obstools import he_lc_from_dr
 def band2postfix(b):
     return str(b).replace(":","-")+"eV"
 
+def glob_plural_then_singular(dd_template):
+    """
+    dd_template must contain '{s}' where the optional plural 's' of
+    'ImagingEvt(s)' goes, e.g. ".../odata/*EPN*ImagingEvt{s}_expmap.ds".
+    Filenames use 'ImagingEvts' (plural); older, already-processed
+    observations may still have 'ImagingEvt' (singular) on disk.
+    """
+    dd = dd_template.format(s="s")
+    fnames = glob.glob(dd)
+    if len(fnames) == 0:
+        dd = dd_template.format(s="")
+        fnames = glob.glob(dd)
+    return fnames, dd
+
 def path4(config, which="datadir",postfix=None):
     tmp = path4_ll(config, which=which, postfix=postfix)
     if str(tmp).lower().strip()=="none": return None
@@ -203,30 +217,29 @@ def path4_ll(config, which="datadir", postfix=None):
 # EXPOSURE MAP
     if which == "pn_expmap":
         odata = str(path4(config, which="odata"))
-        print(odata)
-        dd = odata+"/*EPN*ImagingEvt_expmap.ds"
-        fname = glob.glob(dd)
+        dd_template = odata+"/*EPN*ImagingEvt{s}_expmap.ds"
+        fname, dd = glob_plural_then_singular(dd_template)
         if len(fname)==1:
             return fname[0]
-        elif len(fname)==0: 
+        elif len(fname)==0:
             raise Exception("No exposure map for pn found (",dd,")")
         else:
             raise Exception("More than one exposure map found for pn (",dd,")")
     if which == "m1_expmap":
-        dd = str(path4(config, which="odata"))+"/*EMOS1*ImagingEvt_expmap.ds"
-        fname = glob.glob(dd)
+        dd_template = str(path4(config, which="odata"))+"/*EMOS1*ImagingEvt{s}_expmap.ds"
+        fname, dd = glob_plural_then_singular(dd_template)
         if len(fname)==1:
             return fname[0]
-        elif len(fname)==0: 
+        elif len(fname)==0:
             raise Exception("No exposure map for m1 found (",dd,")")
         else:
             raise Exception("More than one exposure map found for m1 (",dd,")")
     if which == "m2_expmap":
-        dd = str(path4(config, which="odata"))+"/*EMOS2*ImagingEvt_expmap.ds"
-        fname = glob.glob(dd)
+        dd_template = str(path4(config, which="odata"))+"/*EMOS2*ImagingEvt{s}_expmap.ds"
+        fname, dd = glob_plural_then_singular(dd_template)
         if len(fname)==1:
             return fname[0]
-        elif len(fname)==0: 
+        elif len(fname)==0:
             raise Exception("No exposure map for m2 found (",dd,")")
         else:
             raise Exception("More than one exposure map found for m2 (",dd,")")
@@ -295,9 +308,8 @@ def path4_ll(config, which="datadir", postfix=None):
     
     # High energy light curves (for background checks)
     if which == "pn_he_lc":
-        import glob
-        gstr = str(path4(config, which="datadir"))+"/odata/*_EPN_*ImagingEvt_he_lc.fits"
-        fnames = glob.glob(gstr)
+        gstr_template = str(path4(config, which="datadir"))+"/odata/*_EPN_*ImagingEvt{s}_he_lc.fits"
+        fnames, gstr = glob_plural_then_singular(gstr_template)
         if len(fnames) == 1:
             return fnames[0]
         elif len(fnames) == 0:
@@ -324,9 +336,8 @@ def path4_ll(config, which="datadir", postfix=None):
             
             return lc_fn
     if which == "m1_he_lc":
-        import glob
-        gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS1_*ImagingEvt_he_lc.fits"
-        fnames = glob.glob(gstr)
+        gstr_template = str(path4(config, which="datadir"))+"/odata/*_EMOS1_*ImagingEvt{s}_he_lc.fits"
+        fnames, gstr = glob_plural_then_singular(gstr_template)
         if len(fnames) == 1:
             return fnames[0]
         elif len(fnames) == 0:
@@ -352,9 +363,8 @@ def path4_ll(config, which="datadir", postfix=None):
                 raise Exception("More than one high energy light curve found for m1 (",gstr,")")
             return lc_fn
     if which == "m2_he_lc":
-        import glob
-        gstr = str(path4(config, which="datadir"))+"/odata/*_EMOS2_*ImagingEvt_he_lc.fits"
-        fnames = glob.glob(gstr)
+        gstr_template = str(path4(config, which="datadir"))+"/odata/*_EMOS2_*ImagingEvt{s}_he_lc.fits"
+        fnames, gstr = glob_plural_then_singular(gstr_template)
         if len(fnames) == 1:
             return fnames[0]
         elif len(fnames) == 0:

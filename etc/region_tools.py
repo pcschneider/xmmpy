@@ -203,8 +203,11 @@ def fits_region(fn):
        if ff[1].data["SHAPE"][l].upper() == "CIRCLE":
           rr = str("circle(%f, %f, %f)" % (ff[1].data["x"][l], ff[1].data["y"][l],ff[1].data["r"][l]))
           ret.append(rr)
+       elif ff[1].data["SHAPE"][l].upper() == "ANNULUS":
+          rr = str("annulus(%f, %f, %f, %f)" % (ff[1].data["x"][l], ff[1].data["y"][l], ff[1].data["r"][l][0], ff[1].data["r"][l][1]))    
+          ret.append(rr)
        else:
-          raise Exception("xmmpy.etc.fits_region - Only circle-regions allows")
+          raise Exception("xmmpy.etc.fits_region - Only circle- and annulus-regions allows")
    return ret
      
 if __name__ == "__main__":
