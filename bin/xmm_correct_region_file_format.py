@@ -8,6 +8,41 @@ import re
 
 pythoncall='p38'
 
+_SHAPE_LINE_RE = re.compile(r'([a-z]+)\((.+)\)')
+
+
+def _convert_radius_units(val):
+    """
+    Convert a ds9 radius/size field to a plain (unitless) number.
+    '5.0"' (arcsec) and '5.0\'' (arcmin) are converted to decimal degrees;
+    anything else is returned unchanged.
+    """
+    val = val.strip()
+    if val.endswith("\""):
+        return str(float(val[:-1])/3600)
+    elif val.endswith("'"):
+        return str(float(val[:-1])/60)
+    return val
+
+
+def parse_region_lines(fn):
+    """
+    Parse a ds9-format region text file into a list of 'shape(...)' strings
+    with radius/size fields unit-converted, suitable for fits_multi_region_writer().
+    """
+    lines = []
+    with open(fn) as infile:
+        for l in infile:
+            m = _SHAPE_LINE_RE.match(l.strip())
+            if m is None:
+                continue
+            shape, args = m.group(1), m.group(2)
+            parts = [a.strip() for a in args.split(",")]
+            parts = parts[:2] + [_convert_radius_units(a) for a in parts[2:]]
+            lines.append(shape+"("+",".join(parts)+")")
+    return lines
+
+
 def correct_regions(directory, pythoncall=pythoncall, filename=None):
     """
       Check for region in directory and convert supposedly fits-file regions to real fits-files
@@ -50,25 +85,7 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
         except:
             print(fn, " is not a true fits-file")
 
-            def _convert_radius_units(val):
-                val = val.strip()
-                if val.endswith("\""):
-                    return str(float(val[:-1])/3600)
-                elif val.endswith("'"):
-                    return str(float(val[:-1])/60)
-                return val
-
-            p = re.compile(r'([a-z]+)\((.+)\)')
-            lines = []
-            infile = open(fn, "r")
-            for l in infile:
-                m = p.match(l.strip())
-                if m is None:
-                    continue
-                shape, args = m.group(1), m.group(2)
-                parts = [a.strip() for a in args.split(",")]
-                parts = parts[:2] + [_convert_radius_units(a) for a in parts[2:]]
-                lines.append(shape+"("+",".join(parts)+")")
+            lines = parse_region_lines(fn)
 
             if len(lines)==0:
                 raise Exception("No circular region in "+fn)
