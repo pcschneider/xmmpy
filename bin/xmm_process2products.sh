@@ -35,10 +35,6 @@ fi
 bname=$(basename "$filename" | cut -d. -f1)
 
 
-export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/scripttools
-export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/bin
-export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
-
 # 'heainit'/'sasinit' are aliases defined in ~/.bashrc; aliases are not
 # expanded in non-interactive shells, so calling them directly here is a
 # silent no-op ("command not found") and SAS/HEASoft never end up on PATH
@@ -55,6 +51,15 @@ echo "Using SAS_CCFPATH=${SAS_CCFPATH}"
 
 source "${HEADAS}/headas-init.sh"
 source "${SAS_DIR}/setsas.sh"
+
+# Must come after sourcing setsas.sh: setsas.sh caches the caller's PATH in
+# SAS_PREV_PATH on its first run and restores PATH from that cache on every
+# later invocation (e.g. if 'sasinit' already ran earlier in this shell
+# session). Exporting these before setsas.sh would get silently overwritten,
+# leaving xmm_process.py and friends off PATH ("command not found").
+export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/scripttools
+export PATH=$PATH:/home/majestix/hdd/tools/xmmpy/bin
+export PYTHONPATH=$PYTHONPATH:/home/majestix/hdd/tools
 
 echo "Recognized parameters; filename='${filename}', target='${name}', directory='${directory}'"
 ofn=${directory}/xmm_process_${bname}.sh

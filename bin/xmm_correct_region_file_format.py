@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import glob
 import os
+import re
 
 pythoncall='p38'
 
@@ -11,9 +12,8 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
     """
       Check for region in directory and convert supposedly fits-file regions to real fits-files
     """
-    from xmmpy.etc import read_config, path4, fits_region_file_writer,fits_multi_region_writer
+    from xmmpy.etc import read_config, path4, fits_multi_region_writer
     from astropy.io import fits as pyfits
-    from regions import CirclePixelRegion, PixCoord, CircleAnnulusPixelRegion
 
     if os.path.exists(directory) and os.path.isfile(directory):
         try:
@@ -49,51 +49,32 @@ def correct_regions(directory, pythoncall=pythoncall, filename=None):
             ff.close()
         except:
             print(fn, " is not a true fits-file")
+
+            def _convert_radius_units(val):
+                val = val.strip()
+                if val.endswith("\""):
+                    return str(float(val[:-1])/3600)
+                elif val.endswith("'"):
+                    return str(float(val[:-1])/60)
+                return val
+
+            p = re.compile(r'([a-z]+)\((.+)\)')
+            lines = []
             infile = open(fn, "r")
             for l in infile:
-                # print(l)
-                if "circle" in l:
-                    x = l.strip()[7:-1]
-                    # print("x",x)
-                    a,b,c = x.split(",")
-                    a,b = float(a), float(b)
-                    if "\"" in c:
-                        c = float(c[:-1])/3600
-                    elif "\'" in c:
-                        c = float(c[:-1])/60
-                    else:
-                        c = float(c)
-                    print("c",c)
-                    # print(a,b,c)
-                    #Regions.PixRegion
-                    regions = [CirclePixelRegion(PixCoord(x=a, y=b), radius=c)]
-                elif "annulus" in l.lower():
-                    print(fn, " ----> Region is not a circle, aborting...")
-                    x = l.strip()[8:-1]
-                    a,b,c,d = x.split(",")
-                    a,b = float(a), float(b)
-                    if "\"" in c:
-                        c = float(c[:-1])/3600
-                    elif "\'" in c:
-                        c = float(c[:-1])/60
-                    else:
-                        c = float(c)
-                    print("c",c)
-                    if "\"" in d:
-                        d = float(d[:-1])/3600
-                    elif "\'" in d:
-                        d = float(d[:-1])/60
-                    else:
-                        d = float(d)
-                    print("d",d)                    
-                    regions = [CircleAnnulusPixelRegion(PixCoord(x=a, y=b), inner_radius=c, outer_radius=d)]
+                m = p.match(l.strip())
+                if m is None:
+                    continue
+                shape, args = m.group(1), m.group(2)
+                parts = [a.strip() for a in args.split(",")]
+                parts = parts[:2] + [_convert_radius_units(a) for a in parts[2:]]
+                lines.append(shape+"("+",".join(parts)+")")
 
-            # print("regions:",regions)
-            if len(regions)>1:
-                raise Exception("More than one region in "+fn+"("+str(len(regions))+")")
-            elif len(regions)==0:
+            if len(lines)==0:
                 raise Exception("No circular region in "+fn)
-            fits_region_file_writer(regions[0], fn)
+            if len(lines)>1:
+                print("WARNING: %d regions found in %s; writing all of them." % (len(lines), fn))
+            fits_multi_region_writer(lines, ofn=fn, overwrite=True)
             updated.append(fn)
     return updated
             

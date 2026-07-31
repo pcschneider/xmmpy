@@ -136,7 +136,7 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
         m = p.match(line.strip())
         region_shape = m.group()[0:-1]
         print("   ->  \'%s\'" % region_shape)            
-        if region_shape == "circle":
+        if region_shape.lower() == "circle":
             pp = re.compile("[a-z]*\(((.+),(.+),(.+)\))")
             mm = pp.match(line.strip())
             x = float(mm.group(2))
@@ -150,7 +150,7 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
             col_vals["ROTANG"].append([None])
             col_vals["COMPONENT"].append(i+1)
             
-        elif region_shape == "panda":
+        elif region_shape.lower() == "panda":
             pp = re.compile("[a-z]*\(((.+),(.+),(.+),(.+),(.+),(.+),(.+),(.+)\))")
             mm = pp.match(line.strip())
             x = float(mm.group(2))
@@ -174,7 +174,7 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
             col_vals["ROTANG"].append([angle0, angle1])
             col_vals["COMPONENT"].append(i+1)
             
-        elif region_shape == "Ellipse":
+        elif region_shape.lower() == "ellipse":
             pp = re.compile("[a-z]*\(((.+),(.+),(.+),(.+),(.+)\))")
             mm = pp.match(line.strip())
             x = float(mm.group(2))
@@ -190,7 +190,7 @@ def fits_multi_region_writer(lines, ofn, overwrite=True, verbose=1, physical=Tru
             col_vals["ROTANG"].append([a])
             col_vals["COMPONENT"].append(i+1)
             
-        elif region_shape == "Annulus":
+        elif region_shape.lower() == "annulus":
             pp = re.compile("[a-z]*\(((.+),(.+),(.+),(.+)\))")
             mm = pp.match(line.strip())
             x = float(mm.group(2))

@@ -147,8 +147,7 @@ class Exposure():
         ll.error("Cannot transfer source file regions to physical units for reg-file=\'%s\' and evt-file=\'%s\'"  % (bkg_reg, self.evt_filename))
         raise BaseException("Conversion from sky to pixel coordinates failed for reg-file=\'%s\' and evt-file=\'%s\'" % (bkg_reg, self.evt_filename))
     if len(bkg)!=1:
-        #ll.error("Not exactly one region in reg-file=\'%s\'"  % src_reg)
-        raise BaseException("Not exactly one region in reg-file=\'%s\'"  % bkg_reg)
+        ll.warning("Expected exactly one region in reg-file=\'%s\', found %d; using all of them."  % (bkg_reg, len(bkg)))
     else:
         bkg = bkg[0]
     

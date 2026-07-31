@@ -42,8 +42,7 @@ def source_regions(src_name="my_source",coord=None, directory=".", pythoncall="/
         r+="o = Obs(conf_file = \""+conf_fn+"\", directory = \""+dirname+"\")\n"
     else:
         r+="o = Obs(\""+obsID+"\", directory = \""+dirname+"\")\n"
-    r+="o.exposures_from_directory()\n"    
-    
+
     r+="cfn = os.path.expanduser(str(path4(o.config, which=\"datadir\").joinpath(\""+src_name.replace(" ","_")+"_"+obsID+".conf\")))\n"
     r+="print(\"Writing config to \", cfn)\n"
     r+="o.regions4source(\""+src_name+"\", coord="+coord+", ofn=cfn)\n"
