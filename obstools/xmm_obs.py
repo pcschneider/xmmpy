@@ -154,15 +154,27 @@ class Obs():
             return self.config["obsID"]
 
     def _add_exposure(self, exp):
+        ll = logging.getLogger("xmmpy")
+        for eid, e in self.exposures.items():
+            if e.evt_filename == exp.evt_filename:
+                exp.exp_id = eid
+                self.exposures[eid] = exp
+                ll.warning("Exposure "+str(exp)+" already in list, replacing with new exposure.")# raise Exception("Exposure "+str(exp)+" already in list.")
+                return
+
         if exp.exp_id in self.exposures:
             det0 = self.exposures[exp.exp_id].det
             det1 = exp.det
             if det0 != det1: # Not the same exposure
-                ii = int(exp.exp_id)+50
+                ii = 50 + int(exp.exp_id)
                 nexpid = str(ii).zfill(len(exp.exp_id))
-                if nexpid in self.exposures: 
-                    if self.exposures[nexpid].det != exp.det:
-                        raise Exception("Cannot add exposure "+str(exp) + " with new expID:" + str(nexpid))
+                while nexpid in self.exposures:
+                    ii += 50
+                    nexpid = str(ii).zfill(len(exp.exp_id))
+
+                # if nexpid in self.exposures: 
+                #     if self.exposures[nexpid].det != exp.det:
+                #         raise Exception("Cannot add exposure "+str(exp) + " with new expID:" + str(nexpid))
                 exp.exp_id = nexpid      
         self.exposures[exp.exp_id] = exp
 
